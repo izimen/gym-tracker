@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🏋️ CubeFitness Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --bg-card-hover: #252542;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --text-muted: #6b6b80;
+            --border: #2d2d44;
+            --glow: rgba(99, 102, 241, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-image:
+                radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .main-card {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--success), var(--primary));
+            background-size: 200% 100%;
+            animation: gradient-shift 3s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .occupancy-display {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .occupancy-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .occupancy-number {
+            font-size: 5rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 10px;
+            transition: all 0.5s ease;
+        }
+
+        .occupancy-number.low {
+            color: var(--success);
+            text-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
+        }
+
+        .occupancy-number.medium {
+            color: var(--warning);
+            text-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+        }
+
+        .occupancy-number.high {
+            color: var(--danger);
+            text-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+        }
+
+        .occupancy-max {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+        }
+
+        .progress-container {
+            margin: 25px 0;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease;
+            position: relative;
+        }
+
+        .progress-fill.low {
+            background: linear-gradient(90deg, #059669, #10b981);
+        }
+
+        .progress-fill.medium {
+            background: linear-gradient(90deg, #d97706, #f59e0b);
+        }
+
+        .progress-fill.high {
+            background: linear-gradient(90deg, #dc2626, #ef4444);
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .status-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        .status-dot.ok {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .status-dot.error {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+
+        .status-dot.loading {
+            background: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .status-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .update-time {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px var(--glow);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+
+        .refresh-btn.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .refresh-icon {
+            transition: transform 0.5s ease;
+        }
+
+        .refresh-btn.loading .refresh-icon {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .info-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .info-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+        }
+
+        .info-card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .info-card-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .info-card-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            color: var(--danger);
+            font-size: 0.85rem;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 400px) {
+            .occupancy-number {
+                font-size: 4rem;
+            }
+
+            .main-card {
+                padding: 20px;
+            }
+        }
+
+        /* Add to home screen prompt styles */
+        .install-prompt {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid var(--primary);
+            display: none;
+        }
+
+        .install-prompt.show {
+            display: block;
+        }
+
+        .install-prompt-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .install-prompt-dismiss {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏋️</div>
+            <h1 class="title">CubeFitness Garwolin (DEBUG)</h1>
+            <p class="subtitle">Sprawdź ile osób jest na siłowni</p>
+        </div>
+
+        <div class="main-card">
+            <div class="occupancy-display">
+                <div class="occupancy-label">Aktualnie w klubie</div>
+                <div class="occupancy-number low" id="currentCount">--</div>
+                <div class="occupancy-max">z <span id="maxCapacity">160</span> miejsc</div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill low" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="progress-labels">
+                    <span>Pusto 🟢</span>
+                    <span>Tłoczno 🔴</span>
+                </div>
+            </div>
+
+            <div class="status-section">
+                <div class="status-dot ok" id="statusDot"></div>
+                <span class="status-text" id="statusText">Połączono</span>
+            </div>
+
+            <div class="update-time" id="updateTime">
+                Ostatnia aktualizacja: --
+            </div>
+
+            <div class="error-message" id="errorMessage" style="display: none;"></div>
+
+            <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+                <span class="refresh-icon">🔄</span>
+                Odśwież teraz
+            </button>
+        </div>
+
+        <div class="info-cards">
+            <div class="info-card">
+                <div class="info-card-icon">📊</div>
+                <div class="info-card-value" id="percentFull">0%</div>
+                <div class="info-card-label">Zapełnienie</div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-icon">🪑</div>
+                <div class="info-card-value" id="freeSpots">160</div>
+                <div class="info-card-label">Wolne miejsca</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Made by <strong>izim</strong> • Dane odświeżane co minutę
+        </div>
+    </div>
+
+    <script>
+        let lastData = null;
+
+        function getOccupancyClass(current, max) {
+            const percent = (current / max) * 100;
+            if (percent < 40) return 'low';
+            if (percent < 70) return 'medium';
+            return 'high';
+        }
+
+        function updateUI(data) {
+            const currentCount = document.getElementById('currentCount');
+            const maxCapacity = document.getElementById('maxCapacity');
+            const progressFill = document.getElementById('progressFill');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const updateTime = document.getElementById('updateTime');
+            const errorMessage = document.getElementById('errorMessage');
+            const percentFull = document.getElementById('percentFull');
+            const freeSpots = document.getElementById('freeSpots');
+
+            if (data.status === 'ok') {
+                const current = data.current;
+                const max = data.max_capacity;
+                const percent = Math.round((current / max) * 100);
+                const occupancyClass = getOccupancyClass(current, max);
+
+                // Update main display
+                currentCount.textContent = current;
+                currentCount.className = 'occupancy-number ' + occupancyClass;
+                maxCapacity.textContent = max;
+
+                // Update progress bar
+                progressFill.style.width = percent + '%';
+                progressFill.className = 'progress-fill ' + occupancyClass;
+
+                // Update info cards
+                percentFull.textContent = percent + '%';
+                freeSpots.textContent = max - current;
+
+                // Update status
+                statusDot.className = 'status-dot ok';
+                statusText.textContent = 'Połączono';
+
+                // Update time
+                if (data.last_updated) {
+                    const time = data.last_updated.split(' ')[1];
+                    updateTime.textContent = 'Ostatnia aktualizacja: ' + time;
+                }
+
+                // Hide error
+                errorMessage.style.display = 'none';
+
+            } else if (data.status === 'error') {
+                statusDot.className = 'status-dot error';
+                statusText.textContent = 'Błąd połączenia';
+
+                if (data.error) {
+                    errorMessage.textContent = data.error;
+                    errorMessage.style.display = 'block';
+                }
+            } else {
+                statusDot.className = 'status-dot loading';
+                statusText.textContent = 'Ładowanie...';
+            }
+
+            lastData = data;
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/occupancy');
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                updateUI({
+                    status: 'error',
+                    error: 'Nie można połączyć z serwerem'
+                });
+            }
+        }
+
+        async function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('loading');
+
+            try {
+                const response = await fetch('/api/refresh');
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+
+        // Initial fetch
+        fetchData();
+
+        // Auto-refresh every 30 seconds
+        setInterval(fetchData, 30000);
+
+        // Unregister service workers to prevent caching issues
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
