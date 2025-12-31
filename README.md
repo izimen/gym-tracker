@@ -141,4 +141,4 @@ MIT License - zobacz [LICENSE](LICENSE)
 
 ---
 
-Stworzono z 💪 dla CubeFitness Garwolin
+Stworzono z 💪 dla CubeFitness

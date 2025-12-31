@@ -567,7 +567,7 @@ def list_users():
     
     # Simple protection
     secret = request.args.get('secret')
-    if secret != 'cube2025reset':
+    if not ADMIN_SECRET or secret != ADMIN_SECRET:
         return jsonify({'error': 'Unauthorized'}), 401
     
     try:
@@ -589,7 +589,7 @@ def reset_hourly_data():
     
     # Simple protection - require secret parameter
     secret = request.args.get('secret')
-    if secret != 'cube2025reset':
+    if not ADMIN_SECRET or secret != ADMIN_SECRET:
         return jsonify({'error': 'Unauthorized'}), 401
     
     try:
@@ -610,7 +610,7 @@ def debug_weekday_data(weekday):
         return jsonify({'error': 'Firestore not available'}), 503
     
     secret = request.args.get('secret')
-    if secret != 'cube2025reset':
+    if not ADMIN_SECRET or secret != ADMIN_SECRET:
         return jsonify({'error': 'Unauthorized'}), 401
     
     try:
