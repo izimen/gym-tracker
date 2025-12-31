@@ -3,16 +3,15 @@ name: Security Scan
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, master]
   schedule:
-    - cron: '0 0 * * 0'  # Weekly scan on Sunday
+    - cron: '0 0 * * *'  # Daily midnight scan
 
 jobs:
-  security-scan:
+  security-audit:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history for Gitleaks
 
@@ -28,9 +27,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install safety
+          pip install safety pip-audit
           pip install -r requirements.txt
 
-      - name: Check for vulnerable dependencies
+      - name: Audit Python Dependencies (Safety)
         continue-on-error: true
-        run: safety check --full-report
+        run: |
+          safety check --full-report
+
+      - name: Audit Python Dependencies (pip-audit)
+        continue-on-error: true
+        run: |
+          pip-audit --strict

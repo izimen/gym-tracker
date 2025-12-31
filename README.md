@@ -1,168 +1,144 @@
-# CubeFitness Gym Occupancy Tracker 🏋️
+# 🏋️ CubeFitness Gym Tracker
 
-Aplikacja do śledzenia liczby osób na siłowni CubeFitness Garwolin w czasie rzeczywistym.
+> Śledzenie obłożenia siłowni w czasie rzeczywistym + kalendarz treningów
 
-## Funkcje
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
+![Flask](https://img.shields.io/badge/flask-2.3+-green.svg)
+![Cloud Run](https://img.shields.io/badge/Google%20Cloud-Run-orange.svg)
+![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
-- 📊 Wyświetla aktualną liczbę osób na siłowni
-- 🔄 Automatyczne odświeżanie co minutę
-- 📱 Responsywny interfejs - działa świetnie na telefonie
-- 🌙 Ciemny motyw przyjazny dla oczu
-- ⚡ Szybki i lekki
+## ✨ Funkcje
 
-## Jak uruchomić lokalnie
+### 📊 Monitoring Siłowni
+- **Live counter** - aktualna liczba osób na siłowni
+- **Statystyki** - średnie dla dni tygodnia, godzin, trendów
+- **Best/Worst Hours** - analiza najlepszych godzin do treningu
+- **New Year Effect** - porównanie styczeń vs grudzień
 
-1. Zainstaluj zależności:
+### 📅 Kalendarz Treningów
+- **Śledzenie partii ciała** - ramiona, plecy, nogi, klatka itd.
+- **Weight tracking** - zapisywanie ciężarów, serii, powtórzeń
+- **Personal Records** - automatyczne śledzenie PR-ów
+- **Heatmapa roczna** - wizualizacja aktywności
+
+### 👥 Wieloużytkownikowy
+- System logowania
+- Izolowane dane dla każdego użytkownika
+- Panel administracyjny
+
+## 🚀 Quick Start
+
+### Wymagania
+- Python 3.11+
+- Konto GCP z Firestore
+
+### Instalacja lokalna
+
 ```bash
+# Sklonuj repo
+git clone https://github.com/izimen/gym-tracker.git
+cd gym-tracker
+
+# Stwórz virtual environment
+python -m venv venv
+venv\Scripts\activate  # Windows
+# lub: source venv/bin/activate  # Linux/Mac
+
+# Zainstaluj zależności
 pip install -r requirements.txt
-```
 
-2. Uruchom aplikację:
-```bash
+# Skonfiguruj zmienne środowiskowe
+cp .env.example .env
+# Edytuj .env i dodaj swoje dane
+
+# Uruchom
 python app.py
 ```
 
-3. Otwórz przeglądarkę: http://localhost:5000
+Otwórz http://localhost:5000
 
-## Wdrożenie na Oracle Cloud (Free Tier)
+## ⚙️ Konfiguracja
 
-### Krok 1: Utwórz konto Oracle Cloud
-1. Wejdź na https://www.oracle.com/cloud/free/
-2. Kliknij "Start for free"
-3. Wypełnij formularz rejestracji
-4. Potwierdź email i skonfiguruj konto
+### Zmienne środowiskowe
 
-### Krok 2: Utwórz maszynę wirtualną (VM)
-1. Zaloguj się do Oracle Cloud Console
-2. Kliknij ☰ (menu) → Compute → Instances
-3. Kliknij "Create Instance"
-4. Nazwa: `gym-tracker`
-5. **Image**: Ubuntu 22.04 (Always Free eligible)
-6. **Shape**: VM.Standard.E2.1.Micro (Always Free - 1 OCPU, 1 GB RAM)
-7. **Networking**: Utwórz nową VCN lub użyj istniejącej
-8. **Add SSH keys**: Wygeneruj nowy klucz lub dodaj swój (zapisz klucz prywatny!)
-9. Kliknij "Create"
+| Zmienna | Opis | Wymagane |
+|---------|------|----------|
+| `GYM_EMAIL` | Email do konta CubeFitness | ✅ |
+| `GYM_PASSWORD` | Hasło do konta CubeFitness | ✅ |
+| `ADMIN_SECRET` | Secret dla endpointów admin | ✅ |
+| `PORT` | Port serwera (default: 5000) | ❌ |
 
-### Krok 3: Skonfiguruj reguły firewall
-1. Wejdź w szczegóły instancji
-2. Kliknij "Virtual Cloud Network" → "Security Lists" → "Default Security List"
-3. Kliknij "Add Ingress Rules"
-4. Dodaj regułę:
-   - Source CIDR: `0.0.0.0/0`
-   - Destination Port Range: `5000`
-   - Description: `Gym Tracker App`
+### Google Cloud Firestore
+Aplikacja wymaga Firestore do przechowywania danych. Ustaw `GOOGLE_APPLICATION_CREDENTIALS` lub deploy na Cloud Run z odpowiednim service account.
 
-### Krok 4: Połącz się z serwerem
-```bash
-ssh -i /ścieżka/do/klucza/prywatnego ubuntu@TWÓJ_PUBLICZNY_IP
+## 🌐 Deployment (Google Cloud Run)
+
+Repo zawiera automatyczny deployment przez GitHub Actions:
+
+1. Dodaj secret `GCP_SA_KEY` w GitHub repo settings
+2. Push do `main` uruchomi deployment
+3. Ustaw zmienne środowiskowe w Cloud Run Console
+
+## 📡 API Endpoints
+
+### Publiczne
+| Endpoint | Opis |
+|----------|------|
+| `GET /` | Dashboard |
+| `GET /calendar` | Kalendarz treningów |
+| `GET /api/occupancy` | Aktualne obłożenie |
+| `GET /api/stats` | Statystyki historyczne |
+| `GET /health` | Health check |
+
+### Treningi (wymagają auth)
+| Endpoint | Opis |
+|----------|------|
+| `POST /api/workout` | Zapisz trening |
+| `GET /api/workouts/dashboard` | Dashboard stats |
+| `GET /api/analytics/weekly` | Tygodniowe statystyki |
+| `GET /api/analytics/heatmap/{year}` | Heatmapa roczna |
+
+### Admin (wymagają `?secret=ADMIN_SECRET`)
+| Endpoint | Opis |
+|----------|------|
+| `GET /api/admin/users` | Lista użytkowników |
+| `POST /api/admin/reset-password` | Reset hasła |
+
+## 🛡️ Security
+
+- Credentials przechowywane wyłącznie w env vars
+- Rate limiting na endpointach auth
+- Admin endpoints chronione secretem
+- Zobacz [SECURITY.md](SECURITY.md) dla polityki zgłaszania luk
+
+## 📁 Struktura projektu
+
+```
+gym-tracker/
+├── app.py              # Flask application
+├── database.py         # Firestore operations
+├── templates/
+│   ├── dashboard.html  # Główny dashboard
+│   ├── calendar.html   # Kalendarz treningów
+│   └── index.html      # Legacy view
+├── .github/workflows/
+│   ├── deploy.yml      # Auto-deploy to Cloud Run
+│   └── security-scan.yml # Security scanning
+├── Dockerfile
+├── requirements.txt
+└── SECURITY.md
 ```
 
-### Krok 5: Zainstaluj wymagane oprogramowanie
-```bash
-# Aktualizuj system
-sudo apt update && sudo apt upgrade -y
+## 📱 PWA
 
-# Zainstaluj Python, pip i narzędzie unzip
-sudo apt install python3 python3-pip python3-venv unzip -y
-```
+Dodaj do ekranu głównego telefonu:
+- **Android**: Chrome → Menu → "Dodaj do ekranu głównego"
+- **iPhone**: Safari → Share → "Dodaj do ekranu początkowego"
 
-### Krok 6: Wyślij i rozpakuj aplikację
-Możesz użyć programu (np. FileZilla, WinSCP) aby wysłać plik `gym-tracker.zip` na serwer do katalogu domowego (`/home/ubuntu`).
+## 📄 License
 
-Następnie na serwerze:
-```bash
-# Rozpakuj paczkę
-unzip gym-tracker.zip
-cd gym-tracker
-
-# WAŻNE: Napraw formatowanie pliku (Windows -> Linux)
-sed -i 's/\r$//' setup_server.sh
-
-# Uruchom instalator
-bash setup_server.sh
-```
-
-### Krok 8: Skonfiguruj automatyczny restart
-Utwórz usługę systemd:
-
-```bash
-sudo nano /etc/systemd/system/gym-tracker.service
-```
-
-Wklej:
-```ini
-[Unit]
-Description=Gym Tracker App
-After=network.target
-
-[Service]
-User=ubuntu
-WorkingDirectory=/home/ubuntu/gym-tracker
-Environment="PATH=/home/ubuntu/gym-tracker/venv/bin"
-ExecStart=/home/ubuntu/gym-tracker/venv/bin/gunicorn -w 2 -b 0.0.0.0:5000 app:app
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Aktywuj usługę:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable gym-tracker
-sudo systemctl start gym-tracker
-```
-
-### Krok 9: Gotowe! 🎉
-Otwórz w przeglądarce:
-```
-http://TWÓJ_PUBLICZNY_IP:5000
-```
-
-## Dodaj do ekranu głównego (telefon)
-
-### Android (Chrome):
-1. Otwórz stronę w Chrome
-2. Kliknij ⋮ (menu)
-3. Wybierz "Dodaj do ekranu głównego"
-
-### iPhone (Safari):
-1. Otwórz stronę w Safari
-2. Kliknij 📤 (udostępnij)
-3. Wybierz "Dodaj do ekranu początkowego"
-
-## Zmiana danych logowania
-
-Możesz ustawić dane logowania przez zmienne środowiskowe:
-
-```bash
-export GYM_EMAIL="twój@email.com"
-export GYM_PASSWORD="twojehasło"
-```
-
-Lub edytuj bezpośrednio w `app.py`.
-
-## Rozwiązywanie problemów
-
-### Aplikacja nie działa
-```bash
-sudo systemctl status gym-tracker
-sudo journalctl -u gym-tracker -f
-```
-
-### Nie mogę się połączyć
-- Sprawdź czy port 5000 jest otwarty w Security Lists
-- Sprawdź czy firewall na VM jest wyłączony: `sudo ufw status`
-- Sprawdź czy aplikacja działa: `curl localhost:5000`
-
-## API
-
-- `GET /` - Główna strona
-- `GET /api/occupancy` - Aktualne dane o obłożeniu (JSON)
-- `GET /api/refresh` - Wymuś odświeżenie danych
-- `GET /health` - Status aplikacji
+MIT License - zobacz [LICENSE](LICENSE)
 
 ---
 
-Stworzono z ❤️ dla fanów CubeFitness Garwolin
+Stworzono z 💪 dla CubeFitness Garwolin
