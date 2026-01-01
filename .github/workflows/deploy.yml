@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  PROJECT_ID: gym-tracker-480502
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: europe-central2
   SERVICE: gym-tracker
 

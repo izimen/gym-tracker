@@ -1,144 +1,202 @@
-# 🏋️ CubeFitness Gym Tracker
+# 🏋️ Gym Tracker
 
-> Śledzenie obłożenia siłowni w czasie rzeczywistym + kalendarz treningów
+> Real-time gym occupancy tracking + workout calendar
 
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-2.3+-green.svg)
 ![Cloud Run](https://img.shields.io/badge/Google%20Cloud-Run-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
-## ✨ Funkcje
+A self-hosted gym tracker that scrapes occupancy data from eFitness-powered gym portals and provides a beautiful dashboard with workout tracking features.
 
-### 📊 Monitoring Siłowni
-- **Live counter** - aktualna liczba osób na siłowni
-- **Statystyki** - średnie dla dni tygodnia, godzin, trendów
-- **Best/Worst Hours** - analiza najlepszych godzin do treningu
-- **New Year Effect** - porównanie styczeń vs grudzień
+## ✨ Features
 
-### 📅 Kalendarz Treningów
-- **Śledzenie partii ciała** - ramiona, plecy, nogi, klatka itd.
-- **Weight tracking** - zapisywanie ciężarów, serii, powtórzeń
-- **Personal Records** - automatyczne śledzenie PR-ów
-- **Heatmapa roczna** - wizualizacja aktywności
+### 📊 Gym Occupancy Monitoring
+- **Live counter** - Current number of people at the gym
+- **Statistics** - Averages by day of week, hour, and trends
+- **Best/Worst Hours** - Analysis of optimal training times
+- **New Year Effect** - January vs December comparison
 
-### 👥 Wieloużytkownikowy
-- System logowania
-- Izolowane dane dla każdego użytkownika
-- Panel administracyjny
+### 📅 Workout Calendar
+- **Body part tracking** - Customize categories for your routine
+- **Weight tracking** - Log weights, sets, and reps
+- **Personal Records** - Automatic PR tracking
+- **Yearly heatmap** - GitHub-style activity visualization
+
+### 👥 Multi-User Support
+- User authentication system
+- Isolated workout data per user
+- Admin panel
 
 ## 🚀 Quick Start
 
-### Wymagania
+### Requirements
 - Python 3.11+
-- Konto GCP z Firestore
+- Google Cloud account with Firestore
+- Access to an eFitness-powered gym portal
 
-### Instalacja lokalna
+### Local Installation
 
 ```bash
-# Sklonuj repo
-git clone https://github.com/izimen/gym-tracker.git
+# Clone the repo
+git clone https://github.com/your-username/gym-tracker.git
 cd gym-tracker
 
-# Stwórz virtual environment
+# Create virtual environment
 python -m venv venv
 venv\Scripts\activate  # Windows
-# lub: source venv/bin/activate  # Linux/Mac
+# or: source venv/bin/activate  # Linux/Mac
 
-# Zainstaluj zależności
+# Install dependencies
 pip install -r requirements.txt
 
-# Skonfiguruj zmienne środowiskowe
+# Configure environment variables
 cp .env.example .env
-# Edytuj .env i dodaj swoje dane
+# Edit .env and add your values (see Configuration below)
 
-# Uruchom
+# Run
 python app.py
 ```
 
-Otwórz http://localhost:5000
+Open http://localhost:5000
 
-## ⚙️ Konfiguracja
+## ⚙️ Configuration
 
-### Zmienne środowiskowe
+### Environment Variables
 
-| Zmienna | Opis | Wymagane |
-|---------|------|----------|
-| `GYM_EMAIL` | Email do konta CubeFitness | ✅ |
-| `GYM_PASSWORD` | Hasło do konta CubeFitness | ✅ |
-| `ADMIN_SECRET` | Secret dla endpointów admin | ✅ |
-| `PORT` | Port serwera (default: 5000) | ❌ |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GYM_URL` | Your gym's eFitness portal URL (e.g., `https://your-gym.cms.efitness.com.pl`) | ✅ |
+| `GYM_EMAIL` | Login email for the gym portal | ✅ |
+| `GYM_PASSWORD` | Login password for the gym portal | ✅ |
+| `ADMIN_SECRET` | Secret token for admin endpoints | ✅ |
+| `PORT` | Server port (default: 5000) | ❌ |
 
 ### Google Cloud Firestore
-Aplikacja wymaga Firestore do przechowywania danych. Ustaw `GOOGLE_APPLICATION_CREDENTIALS` lub deploy na Cloud Run z odpowiednim service account.
+The application requires Firestore for data storage. Set `GOOGLE_APPLICATION_CREDENTIALS` or deploy to Cloud Run with an appropriate service account.
+
+## 🔧 Customization
+
+### Gym Operating Hours
+
+Edit `database.py` and modify `GYM_HOURS` to match your gym's schedule:
+
+```python
+GYM_HOURS = {
+    'weekday': (6, 22),  # Monday-Friday: 6:00 - 23:00
+    'weekend': (8, 19),  # Saturday-Sunday: 8:00 - 20:00
+}
+```
+
+### Workout Categories
+
+Customize body parts in `database.py` by modifying `BODY_PARTS`:
+
+```python
+BODY_PARTS = {
+    'chest': {'name': 'Chest', 'emoji': '💪', 'color': '#FF6B6B'},
+    'back': {'name': 'Back', 'emoji': '🔙', 'color': '#4ECDC4'},
+    # Add your own categories...
+}
+```
+
+### Deployment Configuration
+
+For forked repositories deploying to Google Cloud:
+
+1. Add `GCP_PROJECT_ID` to your GitHub repository secrets
+2. Add `GCP_SA_KEY` with your service account credentials
+3. Push to `main` to trigger automatic deployment
 
 ## 🌐 Deployment (Google Cloud Run)
 
-Repo zawiera automatyczny deployment przez GitHub Actions:
+The repo includes automatic deployment via GitHub Actions:
 
-1. Dodaj secret `GCP_SA_KEY` w GitHub repo settings
-2. Push do `main` uruchomi deployment
-3. Ustaw zmienne środowiskowe w Cloud Run Console
+1. Add secrets in GitHub repo settings:
+   - `GCP_PROJECT_ID`: Your Google Cloud project ID
+   - `GCP_SA_KEY`: Service account key JSON
+2. Push to `main` branch to trigger deployment
+3. Set environment variables in Cloud Run Console
 
 ## 📡 API Endpoints
 
-### Publiczne
-| Endpoint | Opis |
-|----------|------|
+### Public
+| Endpoint | Description |
+|----------|-------------|
 | `GET /` | Dashboard |
-| `GET /calendar` | Kalendarz treningów |
-| `GET /api/occupancy` | Aktualne obłożenie |
-| `GET /api/stats` | Statystyki historyczne |
+| `GET /calendar` | Workout calendar |
+| `GET /api/occupancy` | Current occupancy |
+| `GET /api/stats` | Historical statistics |
 | `GET /health` | Health check |
 
-### Treningi (wymagają auth)
-| Endpoint | Opis |
-|----------|------|
-| `POST /api/workout` | Zapisz trening |
+### Workouts (require auth)
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/workout` | Save workout |
 | `GET /api/workouts/dashboard` | Dashboard stats |
-| `GET /api/analytics/weekly` | Tygodniowe statystyki |
-| `GET /api/analytics/heatmap/{year}` | Heatmapa roczna |
+| `GET /api/analytics/weekly` | Weekly statistics |
+| `GET /api/analytics/heatmap/{year}` | Yearly heatmap |
 
-### Admin (wymagają `?secret=ADMIN_SECRET`)
-| Endpoint | Opis |
-|----------|------|
-| `GET /api/admin/users` | Lista użytkowników |
-| `POST /api/admin/reset-password` | Reset hasła |
+### Admin (require `?secret=ADMIN_SECRET`)
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/admin/users` | List users |
+| `POST /api/admin/reset-password` | Reset password |
 
 ## 🛡️ Security
 
-- Credentials przechowywane wyłącznie w env vars
-- Rate limiting na endpointach auth
-- Admin endpoints chronione secretem
-- Zobacz [SECURITY.md](SECURITY.md) dla polityki zgłaszania luk
+- Credentials stored exclusively in environment variables
+- Rate limiting on auth endpoints
+- Admin endpoints protected by secret
+- See [SECURITY.md](SECURITY.md) for vulnerability reporting
 
-## 📁 Struktura projektu
+## 🤝 Contributing
+
+Contributions are welcome! Here's how to get started:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+### Development Guidelines
+
+- Follow PEP 8 for Python code
+- Add docstrings to new functions
+- Update documentation for new features
+- Test locally before submitting PRs
+
+## 📁 Project Structure
 
 ```
 gym-tracker/
 ├── app.py              # Flask application
 ├── database.py         # Firestore operations
 ├── templates/
-│   ├── dashboard.html  # Główny dashboard
-│   ├── calendar.html   # Kalendarz treningów
+│   ├── dashboard.html  # Main dashboard
+│   ├── calendar.html   # Workout calendar
 │   └── index.html      # Legacy view
 ├── .github/workflows/
 │   ├── deploy.yml      # Auto-deploy to Cloud Run
 │   └── security-scan.yml # Security scanning
 ├── Dockerfile
 ├── requirements.txt
+├── LICENSE
 └── SECURITY.md
 ```
 
 ## 📱 PWA
 
-Dodaj do ekranu głównego telefonu:
-- **Android**: Chrome → Menu → "Dodaj do ekranu głównego"
-- **iPhone**: Safari → Share → "Dodaj do ekranu początkowego"
+Add to your phone's home screen:
+- **Android**: Chrome → Menu → "Add to Home Screen"
+- **iPhone**: Safari → Share → "Add to Home Screen"
 
 ## 📄 License
 
-MIT License - zobacz [LICENSE](LICENSE)
+MIT License - see [LICENSE](LICENSE)
 
 ---
 
-Stworzono z 💪 dla CubeFitness
+Made with 💪 for gym enthusiasts everywhere
+

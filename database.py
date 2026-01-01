@@ -9,6 +9,8 @@ import pytz
 import bcrypt
 import re
 import uuid
+import os
+import secrets
 
 # Initialize Firestore client
 db = None
@@ -24,13 +26,15 @@ def get_db():
 # =============================================================================
 # GYM HOURS CONFIGURATION
 # =============================================================================
+# CUSTOMIZATION: Modify these values to match your gym's operating hours.
+# - 'weekday': tuple of (opening_hour, closing_hour-1) for Mon-Fri
+# - 'weekend': tuple of (opening_hour, closing_hour-1) for Sat-Sun
+# Hours are 0-23 (24-hour format). Last hour is when last slot STARTS.
+# Example: (6, 22) means gym opens at 6:00 and last slot is 22:00-23:00
 
-# Gym opening hours (hour ranges where gym is open)
-# Weekdays (Mon-Fri): 6:00 - 23:00 (hours 6-22 valid, last slot is 22:00-23:00)
-# Weekends (Sat-Sun): 8:00 - 20:00 (hours 8-19 valid, last slot is 19:00-20:00)
 GYM_HOURS = {
-    'weekday': (6, 22),  # first_hour, last_hour
-    'weekend': (8, 19),
+    'weekday': (6, 22),  # Monday-Friday: 6:00 - 23:00
+    'weekend': (8, 19),  # Saturday-Sunday: 8:00 - 20:00
 }
 
 
@@ -367,6 +371,12 @@ def get_current_weekday_name() -> str:
 # =============================================================================
 # WORKOUT TRACKING - Body Parts Calendar
 # =============================================================================
+# CUSTOMIZATION: Modify BODY_PARTS to customize workout categories.
+# Each entry: 'key': {'name': 'Display Name', 'emoji': '🔥', 'color': '#HEX'}
+# - key: Internal identifier (lowercase, no spaces)
+# - name: Display name in UI (supports Unicode for any language)
+# - emoji: Emoji shown in calendar/dashboard
+# - color: Hex color for charts and highlights
 
 # Default admin user ID - existing workouts belong to this user
 DEFAULT_USER_ID = "admin"
@@ -384,14 +394,23 @@ BODY_PARTS = {
 
 
 def ensure_admin_user():
-    """Create admin user if it doesn't exist"""
+    """
+    Create admin user if it doesn't exist.
+    Password is set via ADMIN_PASSWORD env var or generated securely.
+    """
     db = get_db()
     # Check if admin exists
     docs = db.collection('users').where('username_lower', '==', 'admin').limit(1).stream()
     if not any(True for _ in docs):
-        # Create admin user
+        # Get password from env var or generate secure random password
+        admin_password = os.environ.get('ADMIN_PASSWORD')
+        if not admin_password:
+            admin_password = secrets.token_urlsafe(16)
+            print(f"⚠️  SECURITY: Generated admin password: {admin_password}")
+            print("   Set ADMIN_PASSWORD env var to use a custom password.")
+        
         tz = pytz.timezone('Europe/Warsaw')
-        password_hash = hash_password('admin')
+        password_hash = hash_password(admin_password)
         db.collection('users').document('admin').set({
             'user_id': 'admin',
             'username': 'admin',
@@ -399,7 +418,7 @@ def ensure_admin_user():
             'password_hash': password_hash,
             'created_at': datetime.now(tz).isoformat()
         })
-        print("Created admin user with password 'admin'")
+        print("Created admin user.")
 
 
 def save_workout(date_str: str, body_parts: list, weight_data: dict = None, notes: str = None, user_id: str = None):

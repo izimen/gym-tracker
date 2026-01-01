@@ -25,17 +25,34 @@ except Exception as e:
     FIRESTORE_ENABLED = False
 
 app = Flask(__name__)
-CORS(app)
+
+# CORS Configuration - restrict to allowed origins
+# Set ALLOWED_ORIGINS env var as comma-separated list (e.g., "https://example.com,http://localhost:5000")
+allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5000,http://127.0.0.1:5000').split(',')
+CORS(app, origins=[o.strip() for o in allowed_origins])
+
+# Rate Limiting Configuration
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 # Configuration - MUST be set via environment variables
 GYM_EMAIL = os.environ.get('GYM_EMAIL')
 GYM_PASSWORD = os.environ.get('GYM_PASSWORD')
 ADMIN_SECRET = os.environ.get('ADMIN_SECRET')
-GYM_URL = 'https://cubefitness-garwolin.cms.efitness.com.pl'
-LOGIN_URL = f'{GYM_URL}/Login/SystemLogin'
-DATA_URL = f'{GYM_URL}/na-terenie-klubu'
+GYM_URL = os.environ.get('GYM_URL')
+LOGIN_URL = f'{GYM_URL}/Login/SystemLogin' if GYM_URL else None
+DATA_URL = f'{GYM_URL}/na-terenie-klubu' if GYM_URL else None
 
 # Validate required environment variables at startup
+if not GYM_URL:
+    print("WARNING: GYM_URL environment variable is not set!")
+    print("Set it to your gym's eFitness CMS portal URL (e.g., https://your-gym.cms.efitness.com.pl)")
 if not GYM_EMAIL or not GYM_PASSWORD:
     print("WARNING: GYM_EMAIL and GYM_PASSWORD environment variables are not set!")
     print("The application will not be able to fetch gym data.")
@@ -488,6 +505,7 @@ def get_new_year_stats():
 # =============================================================================
 
 @app.route('/api/auth/register', methods=['POST'])
+@limiter.limit("5 per minute")
 def register_user():
     """Register a new user"""
     if not FIRESTORE_ENABLED:
@@ -510,6 +528,7 @@ def register_user():
 
 
 @app.route('/api/auth/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login_user():
     """Login with username and password"""
     if not FIRESTORE_ENABLED:
@@ -680,9 +699,14 @@ def debug_weekday_data(weekday):
 
 @app.route('/api/export/workouts')
 def export_workouts():
-    """Export all workouts as JSON"""
+    """Export all workouts as JSON (admin only)"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
+    
+    # Require admin secret via header or query param
+    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret')
+    if not ADMIN_SECRET or secret != ADMIN_SECRET:
+        return jsonify({'error': 'Unauthorized'}), 401
     
     try:
         workouts = database.export_all_workouts()
@@ -694,14 +718,20 @@ def export_workouts():
         response.headers['Content-Disposition'] = 'attachment; filename=workouts_backup.json'
         return response
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Export error: {e}")
+        return jsonify({'error': 'Export failed'}), 500
 
 
 @app.route('/api/export/full')
 def export_full():
-    """Export full backup of all data"""
+    """Export full backup of all data (admin only)"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
+    
+    # Require admin secret via header or query param
+    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret')
+    if not ADMIN_SECRET or secret != ADMIN_SECRET:
+        return jsonify({'error': 'Unauthorized'}), 401
     
     try:
         backup = database.export_full_backup()
@@ -709,7 +739,8 @@ def export_full():
         response.headers['Content-Disposition'] = 'attachment; filename=gym_tracker_backup.json'
         return response
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Backup error: {e}")
+        return jsonify({'error': 'Backup failed'}), 500
 
 
 @app.route('/api/strength')
