@@ -604,8 +604,24 @@ def get_neglected_parts(threshold: int = 2, user_id: str = None) -> list:
 
 
 def get_most_trained_part(user_id: str = None) -> dict:
-    """Get the most frequently trained body part this month"""
+    """Get the most frequently trained body part this month (or last month if no data)"""
+    # 1. Try current month
     counts = get_body_part_counts(user_id=user_id)
+    
+    # Check if we have any data
+    if not counts or all(c == 0 for c in counts.values()):
+        # 2. Try previous month
+        tz = pytz.timezone('Europe/Warsaw')
+        now = datetime.now(tz)
+        prev_month = now.month - 1
+        prev_year = now.year
+        
+        if prev_month == 0:
+            prev_month = 12
+            prev_year -= 1
+            
+        counts = get_body_part_counts(year=prev_year, month=prev_month, user_id=user_id)
+        
     if not counts:
         return None
     
