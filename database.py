@@ -784,7 +784,7 @@ def get_month_comparison(user_id: str = None) -> dict:
         'current': {
             'year': current_year,
             'month': current_month,
-            'month_name': WEEKDAY_NAMES_PL[current_month - 1] if current_month <= 7 else ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'][current_month - 1],
+            'month_name': ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'][current_month - 1],
             'count': current_count,
             'days_elapsed': days_in_current,
             'avg_per_week': current_avg
@@ -792,7 +792,7 @@ def get_month_comparison(user_id: str = None) -> dict:
         'previous': {
             'year': prev_year,
             'month': prev_month,
-            'month_name': ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'][prev_month - 1],
+            'month_name': ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'][prev_month - 1],
             'count': prev_count,
             'days_total': days_in_prev,
             'avg_per_week': prev_avg
