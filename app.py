@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import os
+import secrets
 from datetime import datetime
 import threading
 import time
@@ -327,6 +328,11 @@ def save_workout():
         return jsonify({'error': 'Missing date or body_parts'}), 400
     
     date_str = data['date']
+    
+    # Validate date format (YYYY-MM-DD)
+    if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+        return jsonify({'error': 'Invalid date format, use YYYY-MM-DD'}), 400
+    
     body_parts = data['body_parts']
     weight_data = data.get('weight_data')
     notes = data.get('notes')
@@ -557,9 +563,9 @@ def admin_reset_password():
         return jsonify({'success': False, 'error': 'Firestore not available'}), 503
     
     
-    # Simple protection - require secret parameter
-    secret = request.args.get('secret')
-    if not ADMIN_SECRET or secret != ADMIN_SECRET:
+    # Simple protection - require secret parameter (timing-safe comparison)
+    secret = request.args.get('secret') or ''
+    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
     
     data = request.get_json()
@@ -584,9 +590,9 @@ def list_users():
         return jsonify({'error': 'Firestore not available'}), 503
     
     
-    # Simple protection
-    secret = request.args.get('secret')
-    if not ADMIN_SECRET or secret != ADMIN_SECRET:
+    # Simple protection (timing-safe comparison)
+    secret = request.args.get('secret') or ''
+    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
     try:
@@ -606,9 +612,9 @@ def reset_hourly_data():
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    # Simple protection - require secret parameter
-    secret = request.args.get('secret')
-    if not ADMIN_SECRET or secret != ADMIN_SECRET:
+    # Simple protection - require secret parameter (timing-safe comparison)
+    secret = request.args.get('secret') or ''
+    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
     try:
@@ -628,8 +634,8 @@ def debug_weekday_data(weekday):
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    secret = request.args.get('secret')
-    if not ADMIN_SECRET or secret != ADMIN_SECRET:
+    secret = request.args.get('secret') or ''
+    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
     try:
@@ -703,9 +709,9 @@ def export_workouts():
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    # Require admin secret via header or query param
-    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret')
-    if not ADMIN_SECRET or secret != ADMIN_SECRET:
+    # Require admin secret via header or query param (timing-safe comparison)
+    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
+    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
     try:
@@ -728,9 +734,9 @@ def export_full():
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    # Require admin secret via header or query param
-    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret')
-    if not ADMIN_SECRET or secret != ADMIN_SECRET:
+    # Require admin secret via header or query param (timing-safe comparison)
+    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
+    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
     try:
