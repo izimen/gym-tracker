@@ -1864,8 +1864,9 @@ def get_new_year_effect(year: int = None) -> dict:
     # Get January data
     jan_data = get_month_daily_max_data(year, 1)
     
-    # Check if we have enough data (need at least 3 days in both months)
-    if dec_data['days_count'] < 3 or jan_data['days_count'] < 3:
+    # Check if we have enough data (need at least 1 day in both months)
+    # Lowered threshold to show data earlier in January
+    if dec_data['days_count'] < 1 or jan_data['days_count'] < 1:
         return {'has_data': False, 'reason': 'Za mało danych'}
     
     # Calculate overall change

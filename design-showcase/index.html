@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 Design Showcase - Cube Gym Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #a78bfa;
+            --primary-dark: #5b21b6;
+            --success: #10b981;
+            --bg-dark: #09090f;
+            --bg-card: #13131f;
+            --bg-card-hover: #1a1a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d0;
+            --text-muted: #6b6b80;
+            --border: #1f1f35;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image:
+                radial-gradient(ellipse at top, rgba(124, 58, 237, 0.08) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .logo-icon {
+            font-size: 2.5rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-light), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+
+        .designs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+
+        .design-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .design-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(124, 58, 237, 0.2);
+        }
+
+        .design-preview {
+            height: 220px;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .design-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.9;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .design-card:hover .design-preview img {
+            opacity: 1;
+            transform: scale(1.02);
+        }
+
+        .preview-placeholder {
+            font-size: 4rem;
+            opacity: 0.3;
+        }
+
+        .design-info {
+            padding: 24px;
+        }
+
+        .design-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .design-badge {
+            font-size: 0.65rem;
+            padding: 4px 8px;
+            background: var(--primary);
+            border-radius: 20px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .design-badge.new {
+            background: var(--success);
+        }
+
+        .design-description {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .design-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            background: rgba(124, 58, 237, 0.15);
+            border-radius: 20px;
+            color: var(--primary-light);
+        }
+
+        .view-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .design-card:hover .view-btn {
+            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 48px;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .current-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 6px 12px;
+            background: rgba(16, 185, 129, 0.9);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: white;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🏋️</span>
+                <span class="logo-text">Cube Siłownia #POWER</span>
+            </div>
+            <h1 class="title">Design Showcase</h1>
+            <p class="subtitle">Przeglądaj różne warianty strony Statystyki i wybierz najlepszy</p>
+        </header>
+
+        <div class="designs-grid">
+            <!-- Current Design -->
+            <a href="variant-current.html" class="design-card">
+                <div class="design-preview">
+                    <span class="preview-placeholder">📊</span>
+                    <span class="current-badge">Obecny</span>
+                </div>
+                <div class="design-info">
+                    <h2 class="design-name">Obecny Design</h2>
+                    <p class="design-description">
+                        Aktualny wygląd strony Statystyki - zachowany jako punkt odniesienia do porównań.
+                    </p>
+                    <div class="design-tags">
+                        <span class="tag">Oryginalny</span>
+                        <span class="tag">Sprawdzony</span>
+                    </div>
+                    <div class="view-btn">👀 Zobacz</div>
+                </div>
+            </a>
+
+            <!-- Variant A: Bento Grid -->
+            <a href="variant-a-bento.html" class="design-card">
+                <div class="design-preview">
+                    <span class="preview-placeholder">🧱</span>
+                </div>
+                <div class="design-info">
+                    <h2 class="design-name">
+                        Wariant A: Bento Grid
+                        <span class="design-badge new">Nowy</span>
+                    </h2>
+                    <p class="design-description">
+                        Nowoczesny layout inspirowany Apple Bento - asymetryczna siatka z różnymi rozmiarami kart.
+                    </p>
+                    <div class="design-tags">
+                        <span class="tag">Bento</span>
+                        <span class="tag">Asymetryczny</span>
+                        <span class="tag">Apple-style</span>
+                    </div>
+                    <div class="view-btn">👀 Zobacz</div>
+                </div>
+            </a>
+
+            <!-- Variant B: Dashboard Pro -->
+            <a href="variant-b-dashboard.html" class="design-card">
+                <div class="design-preview">
+                    <span class="preview-placeholder">📈</span>
+                </div>
+                <div class="design-info">
+                    <h2 class="design-name">
+                        Wariant B: Dashboard Pro
+                        <span class="design-badge new">Nowy</span>
+                    </h2>
+                    <p class="design-description">
+                        Profesjonalny dashboard z sidebar - większy nacisk na wykresy i wizualizacje danych.
+                    </p>
+                    <div class="design-tags">
+                        <span class="tag">Sidebar</span>
+                        <span class="tag">Data-focused</span>
+                        <span class="tag">Stripe-style</span>
+                    </div>
+                    <div class="view-btn">👀 Zobacz</div>
+                </div>
+            </a>
+
+            <!-- Variant C: Minimal Cards -->
+            <a href="variant-c-minimal.html" class="design-card">
+                <div class="design-preview">
+                    <span class="preview-placeholder">✨</span>
+                </div>
+                <div class="design-info">
+                    <h2 class="design-name">
+                        Wariant C: Minimal Cards
+                        <span class="design-badge new">Nowy</span>
+                    </h2>
+                    <p class="design-description">
+                        Minimalistyczny design z dużymi, oddychającymi kartami i zwiększoną czytelnością.
+                    </p>
+                    <div class="design-tags">
+                        <span class="tag">Minimal</span>
+                        <span class="tag">Glassmorphism</span>
+                        <span class="tag">Clean</span>
+                    </div>
+                    <div class="view-btn">👀 Zobacz</div>
+                </div>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p>💡 Kliknij na kartę, aby zobaczyć pełny podgląd designu</p>
+            <p style="margin-top: 8px; opacity: 0.7;">Design Showcase v1.0 • Cube Gym Tracker</p>
+        </footer>
+    </div>
+</body>
+
+</html>

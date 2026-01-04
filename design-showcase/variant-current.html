@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obecny Design - Statystyki</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #a78bfa;
+            --primary-dark: #5b21b6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0a0a12;
+            --bg-card: #12121f;
+            --bg-input: #0d0d16;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d0;
+            --text-muted: #6b6b80;
+            --border: #1f1f35;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--primary-light);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 100;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .variant-label {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--success);
+            border-radius: 10px;
+            color: var(--success);
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 100;
+        }
+
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: linear-gradient(180deg, var(--bg-dark) 0%, rgba(10, 10, 18, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 1.5rem;
+        }
+
+        .logo-text {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .live-counter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(0.9);
+            }
+        }
+
+        .live-count {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .live-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .tab-nav {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 16px 20px 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-card);
+            padding: 4px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .stat-box {
+            background: var(--bg-input);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+
+        .chart-section {
+            margin-bottom: 20px;
+        }
+
+        .chart-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .daily-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 140px;
+            gap: 4px;
+            padding-top: 25px;
+        }
+
+        .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 40px;
+            background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+            border-radius: 5px 5px 0 0;
+            position: relative;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .bar-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .hourly-container {
+            background: rgba(30, 30, 45, 0.6);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .hourly-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .hourly-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .hourly-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 0.7rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+        }
+
+        .legend-dot.green {
+            background: #22c55e;
+        }
+
+        .legend-dot.yellow {
+            background: #eab308;
+        }
+
+        .legend-dot.red {
+            background: #ef4444;
+        }
+
+        .hourly-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 180px;
+            gap: 6px;
+            padding: 30px 0 35px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hour-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+            position: relative;
+        }
+
+        .hour-bar {
+            width: 100%;
+            max-width: 38px;
+            border-radius: 6px 6px 3px 3px;
+            min-height: 4px;
+            position: relative;
+        }
+
+        .hour-bar.low {
+            background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
+        }
+
+        .hour-bar.medium {
+            background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+        }
+
+        .hour-bar.high {
+            background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+        }
+
+        .hour-bar-value {
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .hour-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            position: absolute;
+            bottom: -24px;
+        }
+
+        .top-times {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .top-card {
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid;
+        }
+
+        .top-card.best {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .top-card.worst {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .top-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .top-card.best .top-title {
+            color: var(--success);
+        }
+
+        .top-card.worst .top-title {
+            color: var(--danger);
+        }
+
+        .top-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+        }
+
+        .top-card.best .top-item {
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .top-card.worst .top-item {
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .top-medal {
+            font-size: 1rem;
+        }
+
+        .top-time {
+            font-size: 0.8rem;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .top-count {
+            font-size: 0.7rem;
+        }
+
+        .top-card.best .top-count {
+            color: var(--success);
+        }
+
+        .top-card.worst .top-count {
+            color: var(--danger);
+        }
+
+        .effect-card {
+            margin-top: 16px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .effect-title {
+            font-size: 0.85rem;
+            color: #a78bfa;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .effect-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .effect-left {
+            flex: 1;
+            min-width: 220px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .effect-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .effect-icon {
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        .effect-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .effect-right {
+            flex: 1;
+            min-width: 220px;
+            border-left: 1px solid rgba(139, 92, 246, 0.2);
+            padding-left: 24px;
+        }
+
+        .trend-title {
+            font-size: 0.75rem;
+            color: #a78bfa;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .trend-text {
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .trend-warning {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            background: rgba(234, 179, 8, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(234, 179, 8, 0.2);
+            width: fit-content;
+            color: var(--warning);
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" class="back-link">← Powrót do showcase</a>
+    <div class="variant-label">OBECNY DESIGN</div>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">🏋️</span>
+                <span class="logo-text">Cube Siłownia #POWER</span>
+            </div>
+            <div class="live-counter">
+                <div class="live-dot"></div>
+                <span class="live-count">223</span>
+                <span class="live-label">osób dzisiaj</span>
+            </div>
+            <div style="color: var(--text-muted); font-size: 0.85rem;">👤 admin</div>
+        </div>
+    </header>
+
+    <nav class="tab-nav">
+        <div class="tabs">
+            <button class="tab">📅 Kalendarz</button>
+            <button class="tab active">📊 Statystyki</button>
+            <button class="tab">💪 Siła</button>
+            <button class="tab">⚙️ Więcej</button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="card">
+            <div class="card-title">📊 Statystyki obłożenia</div>
+
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-value" style="color: var(--text-muted);">Zamknięte</div>
+                    <div class="stat-label">Śr. piątek</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" style="color: var(--text-muted);">Zamknięte</div>
+                    <div class="stat-label">Śr. piątek o tej porze</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" style="color: var(--text-muted);">Zamknięte</div>
+                    <div class="stat-label">Śr. o tej porze</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" style="color: var(--text-muted);">Zamknięte</div>
+                    <div class="stat-label">Teraz</div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-label">📅 Średnia dla każdego dnia tygodnia:</div>
+                <div class="daily-chart">
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 80%;"><span class="bar-value">312</span></div><span
+                            class="bar-label">Pon</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 90%;"><span class="bar-value">354</span></div><span
+                            class="bar-label">Wt</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 45%;"><span class="bar-value">174</span></div><span
+                            class="bar-label">Śr</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 60%;"><span class="bar-value">236</span></div><span
+                            class="bar-label">Czw</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 65%;"><span class="bar-value">253</span></div><span
+                            class="bar-label">Pt</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 55%;"><span class="bar-value">213</span></div><span
+                            class="bar-label">Sob</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 37%;"><span class="bar-value">141</span></div><span
+                            class="bar-label">Nd</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hourly-container">
+                <div class="hourly-header">
+                    <div class="hourly-title">⏰ Średnia wejść na godzinę (6-23)</div>
+                    <div class="hourly-legend">
+                        <div class="legend-item">
+                            <div class="legend-dot green"></div><span>Mało</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot yellow"></div><span>Średnio</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot red"></div><span>Dużo</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hourly-chart">
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar low" style="height: 15%;"><span class="hour-bar-value">7</span></div><span
+                            class="hour-label">6</span>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar low" style="height: 8%;"><span class="hour-bar-value">2</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 28%;"><span class="hour-bar-value">14</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 24%;"><span class="hour-bar-value">12</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 22%;"><span class="hour-bar-value">11</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 28%;"><span class="hour-bar-value">14</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 26%;"><span class="hour-bar-value">13</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 26%;"><span class="hour-bar-value">13</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 28%;"><span class="hour-bar-value">14</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 30%;"><span class="hour-bar-value">15</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 44%;"><span class="hour-bar-value">22</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar high" style="height: 52%;"><span class="hour-bar-value">26</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar high" style="height: 58%;"><span class="hour-bar-value">30</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar high" style="height: 72%;"><span class="hour-bar-value">38</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar high" style="height: 100%;"><span class="hour-bar-value">52</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar high" style="height: 35%;"><span class="hour-bar-value">18</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar high" style="height: 42%;"><span class="hour-bar-value">22</span></div>
+                    </div>
+                    <div class="hour-bar-wrapper">
+                        <div class="hour-bar medium" style="height: 16%;"><span class="hour-bar-value">8</span></div>
+                        <span class="hour-label">23</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="top-times">
+                <div class="top-card best">
+                    <div class="top-title">🏆 TOP 3 Najlepsze</div>
+                    <div class="top-item"><span class="top-medal">🥇</span><span class="top-time">Śr
+                            21:00-23:00</span><span class="top-count">~7 os.</span></div>
+                    <div class="top-item"><span class="top-medal">🥈</span><span class="top-time">Śr
+                            6:00-8:00</span><span class="top-count">~9 os.</span></div>
+                    <div class="top-item"><span class="top-medal">🥉</span><span class="top-time">Czw
+                            7:00-9:00</span><span class="top-count">~11 os.</span></div>
+                </div>
+                <div class="top-card worst">
+                    <div class="top-title">⚠️ TOP 3 Najgorsze</div>
+                    <div class="top-item"><span class="top-medal">🥇</span><span class="top-time">Pon
+                            17:00-19:00</span><span class="top-count">~85 os.</span></div>
+                    <div class="top-item"><span class="top-medal">🥈</span><span class="top-time">Pon
+                            16:00-18:00</span><span class="top-count">~78 os.</span></div>
+                    <div class="top-item"><span class="top-medal">🥉</span><span class="top-time">Pon
+                            18:00-20:00</span><span class="top-count">~88 os.</span></div>
+                </div>
+            </div>
+
+            <div class="effect-card">
+                <div class="effect-title">🎆 EFEKT NOWOROCZNY</div>
+                <div class="effect-content">
+                    <div class="effect-left">
+                        <div class="effect-item">
+                            <span class="effect-icon">📈</span>
+                            <span class="effect-text">Zbieranie danych...</span>
+                        </div>
+                        <div class="effect-item">
+                            <span class="effect-icon">📅</span>
+                            <span class="effect-text">Porównanie pojawi się w styczniu</span>
+                        </div>
+                        <div class="effect-item">
+                            <span class="effect-icon">🏆</span>
+                            <span class="effect-text">Za mało danych</span>
+                        </div>
+                    </div>
+                    <div class="effect-right">
+                        <div class="trend-title">📊 Trend Tygodniowy</div>
+                        <div class="trend-text" style="color: var(--text-muted);">Wykres dostępny po 7 stycznia</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

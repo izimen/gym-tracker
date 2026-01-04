@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wariant C: Minimal Cards - Statystyki</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #a78bfa;
+            --primary-dark: #5b21b6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0a0a0e;
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --bg-card-hover: rgba(255, 255, 255, 0.04);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --text-muted: #5a5a70;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-light: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 100;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .back-link:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .variant-label {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 12px 18px;
+            background: rgba(124, 58, 237, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 12px;
+            color: var(--primary-light);
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 100;
+        }
+
+        /* MINIMAL HEADER */
+        .header {
+            padding: 80px 32px 40px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, transparent 100%);
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 100px;
+            margin-bottom: 24px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+            }
+
+            50% {
+                opacity: 0.8;
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
+        }
+
+        .live-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+        }
+
+        .page-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 32px 80px;
+        }
+
+        /* SECTION */
+        .section {
+            margin-bottom: 48px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 20px;
+            padding-left: 4px;
+        }
+
+        /* MINIMAL CARDS */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 32px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-light);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        /* STATS CARDS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 28px 20px;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .stat-value.highlight {
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-value.muted {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* DAILY CHART */
+        .chart-card {
+            padding: 40px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .chart-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .daily-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 200px;
+            gap: 20px;
+            padding-top: 40px;
+        }
+
+        .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 60px;
+            background: linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 50%, var(--primary-dark) 100%);
+            border-radius: 12px 12px 6px 6px;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bar:hover {
+            transform: scaleY(1.05);
+            filter: brightness(1.15);
+            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4);
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -32px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .bar-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 16px;
+            font-weight: 500;
+        }
+
+        /* HOURLY CHART */
+        .hourly-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 24px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+
+        .legend-dot.green {
+            background: linear-gradient(135deg, #4ade80, #16a34a);
+        }
+
+        .legend-dot.yellow {
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+        }
+
+        .legend-dot.red {
+            background: linear-gradient(135deg, #f87171, #dc2626);
+        }
+
+        .hourly-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 220px;
+            gap: 10px;
+            padding: 40px 0 50px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .hour-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+            position: relative;
+        }
+
+        .hour-bar {
+            width: 100%;
+            max-width: 50px;
+            border-radius: 10px 10px 4px 4px;
+            min-height: 6px;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .hour-bar:hover {
+            transform: scaleY(1.08) translateY(-4px);
+            filter: brightness(1.2);
+        }
+
+        .hour-bar.low {
+            background: linear-gradient(180deg, #4ade80, #16a34a);
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+        }
+
+        .hour-bar.medium {
+            background: linear-gradient(180deg, #fbbf24, #d97706);
+            box-shadow: 0 6px 20px rgba(234, 179, 8, 0.35);
+        }
+
+        .hour-bar.high {
+            background: linear-gradient(180deg, #f87171, #dc2626);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+        }
+
+        .hour-value {
+            position: absolute;
+            top: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .hour-label {
+            position: absolute;
+            bottom: -32px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* TWO COLUMN LAYOUT */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        /* TIMES CARDS */
+        .times-card {
+            padding: 28px;
+        }
+
+        .times-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .times-title.best {
+            color: var(--success);
+        }
+
+        .times-title.worst {
+            color: var(--danger);
+        }
+
+        .time-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .time-item.best {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.12);
+        }
+
+        .time-item.worst {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.12);
+        }
+
+        .time-item:hover {
+            transform: translateX(6px);
+        }
+
+        .time-medal {
+            font-size: 1.2rem;
+        }
+
+        .time-slot {
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .time-count {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .time-item.best .time-count {
+            color: var(--success);
+        }
+
+        .time-item.worst .time-count {
+            color: var(--danger);
+        }
+
+        /* EFFECT CARD */
+        .effect-card {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(139, 92, 246, 0.04));
+            border: 1px solid rgba(124, 58, 237, 0.15);
+            padding: 36px;
+        }
+
+        .effect-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+
+        .effect-icon {
+            font-size: 2rem;
+        }
+
+        .effect-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+
+        .effect-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .effect-stat {
+            background: rgba(124, 58, 237, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .effect-stat-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .effect-stat-label {
+            font-size: 0.75rem;
+            color: var(--primary-light);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .effect-stat-value {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+
+            .effect-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 0 16px 60px;
+            }
+
+            .header {
+                padding: 60px 16px 32px;
+            }
+
+            .page-title {
+                font-size: 1.8rem;
+            }
+
+            .card {
+                padding: 24px;
+                border-radius: 20px;
+            }
+
+            .daily-chart {
+                gap: 8px;
+            }
+
+            .bar {
+                max-width: 40px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" class="back-link">← Powrót</a>
+    <div class="variant-label">WARIANT C: MINIMAL CARDS</div>
+
+    <header class="header">
+        <div class="header-badge">
+            <div class="live-dot"></div>
+            <span class="live-text">223 osób dzisiaj</span>
+        </div>
+        <h1 class="page-title">📊 Statystyki</h1>
+        <p class="page-subtitle">Analiza obłożenia siłowni Cube w czasie rzeczywistym</p>
+    </header>
+
+    <main class="container">
+        <!-- Status Section -->
+        <section class="section">
+            <div class="section-title">Status aktualny</div>
+            <div class="stats-grid">
+                <div class="card stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-value muted">Zamknięte</div>
+                    <div class="stat-label">Śr. Piątek</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-value muted">Zamknięte</div>
+                    <div class="stat-label">Śr. o tej porze</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value muted">Zamknięte</div>
+                    <div class="stat-label">Śr. Pt o tej porze</div>
+                </div>
+                <div class="card stat-card">
+                    <div class="stat-icon">🔴</div>
+                    <div class="stat-value muted">Zamknięte</div>
+                    <div class="stat-label">Teraz</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Daily Chart -->
+        <section class="section">
+            <div class="section-title">Analiza tygodniowa</div>
+            <div class="card chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Średnia dzienna</div>
+                    <div class="chart-meta">Dane z ostatnich 30 dni</div>
+                </div>
+                <div class="daily-chart">
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 80%;"><span class="bar-value">312</span></div><span
+                            class="bar-label">Pon</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 90%;"><span class="bar-value">354</span></div><span
+                            class="bar-label">Wt</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 45%;"><span class="bar-value">174</span></div><span
+                            class="bar-label">Śr</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 60%;"><span class="bar-value">236</span></div><span
+                            class="bar-label">Czw</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 65%;"><span class="bar-value">253</span></div><span
+                            class="bar-label">Pt</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 55%;"><span class="bar-value">213</span></div><span
+                            class="bar-label">Sob</span>
+                    </div>
+                    <div class="bar-wrapper">
+                        <div class="bar" style="height: 37%;"><span class="bar-value">141</span></div><span
+                            class="bar-label">Nd</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Hourly Chart -->
+        <section class="section">
+            <div class="section-title">Rozkład godzinowy</div>
+            <div class="card chart-card">
+                <div class="hourly-header">
+                    <div class="chart-title">Średnia wejść (6:00 - 23:00)</div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-dot green"></div><span>Mało</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot yellow"></div><span>Średnio</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot red"></div><span>Dużo</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hourly-chart">
+                    <div class="hour-wrapper">
+                        <div class="hour-bar low" style="height: 15%;"><span class="hour-value">7</span></div><span
+                            class="hour-label">6</span>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar low" style="height: 8%;"><span class="hour-value">2</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 28%;"><span class="hour-value">14</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 24%;"><span class="hour-value">12</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 22%;"><span class="hour-value">11</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 28%;"><span class="hour-value">14</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 26%;"><span class="hour-value">13</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 26%;"><span class="hour-value">13</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 28%;"><span class="hour-value">14</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 30%;"><span class="hour-value">15</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 44%;"><span class="hour-value">22</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar high" style="height: 52%;"><span class="hour-value">26</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar high" style="height: 58%;"><span class="hour-value">30</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar high" style="height: 72%;"><span class="hour-value">38</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar high" style="height: 100%;"><span class="hour-value">52</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar high" style="height: 35%;"><span class="hour-value">18</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar high" style="height: 42%;"><span class="hour-value">22</span></div>
+                    </div>
+                    <div class="hour-wrapper">
+                        <div class="hour-bar medium" style="height: 16%;"><span class="hour-value">8</span></div><span
+                            class="hour-label">23</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Best/Worst Times -->
+        <section class="section">
+            <div class="section-title">Rekomendacje</div>
+            <div class="two-col">
+                <div class="card times-card">
+                    <div class="times-title best">🏆 Najlepsze godziny</div>
+                    <div class="time-item best"><span class="time-medal">🥇</span><span class="time-slot">Środa
+                            21:00-23:00</span><span class="time-count">~7 os.</span></div>
+                    <div class="time-item best"><span class="time-medal">🥈</span><span class="time-slot">Środa
+                            6:00-8:00</span><span class="time-count">~9 os.</span></div>
+                    <div class="time-item best"><span class="time-medal">🥉</span><span class="time-slot">Czwartek
+                            7:00-9:00</span><span class="time-count">~11 os.</span></div>
+                </div>
+                <div class="card times-card">
+                    <div class="times-title worst">⚠️ Unikaj tych godzin</div>
+                    <div class="time-item worst"><span class="time-medal">💀</span><span class="time-slot">Poniedziałek
+                            18:00-20:00</span><span class="time-count">~88 os.</span></div>
+                    <div class="time-item worst"><span class="time-medal">💀</span><span class="time-slot">Poniedziałek
+                            17:00-19:00</span><span class="time-count">~85 os.</span></div>
+                    <div class="time-item worst"><span class="time-medal">💀</span><span class="time-slot">Poniedziałek
+                            16:00-18:00</span><span class="time-count">~78 os.</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Effect Card -->
+        <section class="section">
+            <div class="section-title">Trendy</div>
+            <div class="card effect-card">
+                <div class="effect-header">
+                    <span class="effect-icon">🎆</span>
+                    <span class="effect-title">Efekt Noworoczny</span>
+                </div>
+                <div class="effect-grid">
+                    <div class="effect-stat">
+                        <div class="effect-stat-icon">📈</div>
+                        <div class="effect-stat-label">Zmiana</div>
+                        <div class="effect-stat-value">Zbieranie danych...</div>
+                    </div>
+                    <div class="effect-stat">
+                        <div class="effect-stat-icon">📅</div>
+                        <div class="effect-stat-label">vs Grudzień</div>
+                        <div class="effect-stat-value">Dostępne w styczniu</div>
+                    </div>
+                    <div class="effect-stat">
+                        <div class="effect-stat-icon">🏆</div>
+                        <div class="effect-stat-label">Szczyt</div>
+                        <div class="effect-stat-value">Za mało danych</div>
+                    </div>
+                    <div class="effect-stat">
+                        <div class="effect-stat-icon">📊</div>
+                        <div class="effect-stat-label">Trend</div>
+                        <div class="effect-stat-value">Po 7 stycznia</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

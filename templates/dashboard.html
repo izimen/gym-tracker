@@ -2189,23 +2189,27 @@
                         `Szczyt: ${day} ${months[monthIdx]} (${peak.occupancy} osób)`;
                 }
 
-                // Weekly trend
-                if (data.weekly_trend && data.weekly_trend.length >= 2) {
+                // Weekly trend - show if we have at least 1 week of data
+                if (data.weekly_trend && data.weekly_trend.length >= 1) {
                     document.getElementById('newYearTrend').style.display = 'block';
 
                     // Build trend string: W1: +42% | W2: +38% ↓ | ...
                     const trendParts = data.weekly_trend.map((w, i) => {
-                        // For mock data, we might want to show all weeks that are available
                         const percentChange = Math.round(w.percent - 100 + data.overall_change);
+                        const sign = percentChange >= 0 ? '+' : '';
                         const arrow = i > 0 && w.change < 0 ? ' ↓' : (i > 0 && w.change > 0 ? ' ↑' : '');
-                        return `W${w.week}: +${percentChange}%${arrow}`;
+                        return `W${w.week}: ${sign}${percentChange}%${arrow}`;
                     });
                     document.getElementById('newYearWeeklyTrend').textContent = trendParts.join(' | ');
+                    document.getElementById('newYearWeeklyTrend').style.color = 'var(--text-primary)';
 
-                    // Decay rate
-                    if (data.avg_weekly_decay !== 0) {
+                    // Decay rate - only show if we have at least 2 weeks
+                    if (data.avg_weekly_decay !== 0 && data.weekly_trend.length >= 2) {
+                        document.getElementById('newYearDecay').style.display = 'flex';
                         document.getElementById('newYearDecayText').textContent =
                             `Spadek ${data.avg_weekly_decay}%/tydzień`;
+                    } else {
+                        document.getElementById('newYearDecay').style.display = 'none';
                     }
                 } else {
                     document.getElementById('newYearTrend').style.display = 'none';

@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+
+  --color-primary: #8b5cf6;
+  /* Electric Violet */
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #18181b;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #06b6d4;
+  /* Cyan neon */
+  --color-accent-foreground: #000000;
+
+  --color-muted: #27272a;
+  --color-muted-foreground: #a1a1aa;
+
+  --color-card: #09090b;
+  /* Zinc-950/Black hybrid */
+  --color-card-foreground: #ffffff;
+
+  --color-border: #27272a;
+  --color-input: #27272a;
+
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 2.5rem;
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-[#050505] border border-white/5 backdrop-blur-3xl shadow-2xl;
+  }
+
+  .neon-glow {
+    @apply shadow-[0_0_20px_-5px_var(--color-primary)];
+  }
+
+  .bento-grid {
+    @apply grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4 pb-24 max-w-[1600px] mx-auto;
+  }
+}
+
+html,
+body {
+  background-color: black;
+  color: white;
+  overflow-x: hidden;
+}
