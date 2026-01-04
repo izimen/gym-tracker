@@ -23,6 +23,15 @@ A self-hosted gym tracker that scrapes occupancy data from eFitness-powered gym 
 - **Personal Records** - Automatic PR tracking
 - **Yearly heatmap** - GitHub-style activity visualization
 
+### 📈 Data Analytics
+- **Data completeness indicators** - Visual dots showing data quality per day:
+  - 🟢 Green: Full data collected
+  - 🟡 Yellow border: Partial data (1-3 hours missing)
+  - ⚪ Gray: Holiday/early closure detected
+  - 🔴 Red: No data
+- **Smart holiday detection** - Automatically detects early closures
+- **Debug endpoint** - `/api/debug/day/YYYY-MM-DD` for data inspection
+
 ### 👥 Multi-User Support
 - User authentication system
 - Isolated workout data per user
@@ -136,6 +145,8 @@ The repo includes automatic deployment via GitHub Actions:
 | `GET /api/workouts/dashboard` | Dashboard stats |
 | `GET /api/analytics/weekly` | Weekly statistics |
 | `GET /api/analytics/heatmap/{year}` | Yearly heatmap |
+| `GET /api/analytics/completeness/{year}/{month}` | Data completeness per day |
+| `GET /api/debug/day/{date}` | Debug raw hourly data |
 
 ### Admin (require `?secret=ADMIN_SECRET`)
 | Endpoint | Description |
