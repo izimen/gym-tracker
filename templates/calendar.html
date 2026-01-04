@@ -741,7 +741,7 @@
         }
     </style>
     <!-- DOMPurify for XSS protection -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="/static/js/purify.min.js"></script>
 </head>
 
 <body>
@@ -873,6 +873,15 @@
     </div>
 
     <script>
+        // Safety wrapper for DOMPurify
+        function safeSanitize(html) {
+            if (typeof DOMPurify !== 'undefined') {
+                return DOMPurify.sanitize(html);
+            }
+            console.warn('DOMPurify not loaded, falling back to raw HTML');
+            return html;
+        }
+
         const MONTHS_PL = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
             'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
 
@@ -987,10 +996,10 @@
                     cell.classList.add('has-workout');
                 }
 
-                cell.innerHTML = `
+                cell.innerHTML = safeSanitize(`
                     <div class="day-number">${day}</div>
                     <div class="day-icons">${workout ? getWorkoutIcons(workout.body_parts) : ''}</div>
-                `;
+                `);
 
                 cell.onclick = () => openModal(dateStr);
                 container.appendChild(cell);
@@ -1010,7 +1019,7 @@
             for (let day = 1; day <= nextMonthDays; day++) {
                 const cell = document.createElement('div');
                 cell.className = 'day other-month';
-                cell.innerHTML = `<div class="day-number">${day}</div>`;
+                cell.innerHTML = safeSanitize(`<div class="day-number">${day}</div>`);
                 // Click to navigate to next month
                 cell.onclick = () => {
                     currentMonth = nextMonth;
@@ -1033,7 +1042,7 @@
             for (const [key, config] of Object.entries(bodyPartsConfig)) {
                 const item = document.createElement('div');
                 item.className = 'legend-item';
-                item.innerHTML = `<span>${config.emoji}</span><span>${config.name}</span>`;
+                item.innerHTML = safeSanitize(`<span>${config.emoji}</span><span>${config.name}</span>`);
                 container.appendChild(item);
             }
         }
@@ -1045,10 +1054,10 @@
             for (const [key, config] of Object.entries(bodyPartsConfig)) {
                 const btn = document.createElement('button');
                 btn.className = 'body-part-btn' + (selectedParts.includes(key) ? ' selected' : '');
-                btn.innerHTML = `
+                btn.innerHTML = safeSanitize(`
                     <span class="body-part-emoji">${config.emoji}</span>
                     <span class="body-part-name">${config.name}</span>
-                `;
+                `);
                 btn.onclick = () => togglePart(key);
                 container.appendChild(btn);
             }

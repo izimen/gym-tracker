@@ -3,7 +3,7 @@ CubeFitness Gym Entries Tracker
 Backend server that scrapes gym entry data and serves it via API
 """
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, redirect
 from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
@@ -792,6 +792,57 @@ def health():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
+
+# =============================================================================
+# SECURITY HEADERS & CACHING
+# =============================================================================
+
+@app.before_request
+def enforce_https():
+    """Redirect HTTP to HTTPS in production (Cloud Run sets X-Forwarded-Proto)"""
+    if request.headers.get('X-Forwarded-Proto') == 'http':
+        url = request.url.replace('http://', 'https://', 1)
+        return redirect(url, code=301)
+
+
+@app.after_request
+def add_security_headers(response):
+    """Add security and caching headers to all responses"""
+    
+    # Security Headers
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    
+    # Content Security Policy - allows inline styles/scripts (needed for current app)
+    # but restricts external sources
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "font-src 'self'; "
+        "img-src 'self' data: https://fav.farm; "
+        "connect-src 'self'; "
+        "frame-ancestors 'self';"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    
+    # HSTS - Strict Transport Security (1 year)
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    
+    # Caching for static assets
+    if request.path.startswith('/static/'):
+        # Static files: cache for 1 year (immutable content)
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    elif request.path.endswith('.html') or request.path == '/':
+        # HTML pages: always revalidate
+        response.headers['Cache-Control'] = 'no-cache, must-revalidate'
+    elif request.path.startswith('/api/'):
+        # API responses: no caching (dynamic data)
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    
+    return response
 
 
 if __name__ == '__main__':

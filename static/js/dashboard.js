@@ -1,4 +1,17 @@
 // ============================================
+// UTILS
+// ============================================
+
+// Safety wrapper for DOMPurify
+function safeSanitize(html) {
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(html);
+    }
+    console.warn('DOMPurify not loaded, falling back to raw HTML');
+    return html;
+}
+
+// ============================================
 // STATE
 // ============================================
 const MONTHS_PL = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
@@ -293,7 +306,7 @@ function renderCalendar() {
         const day = prevMonthDays - i;
         const cell = document.createElement('div');
         cell.className = 'day other-month';
-        cell.innerHTML = DOMPurify.sanitize(`<div class="day-number">${day}</div>`);
+        cell.innerHTML = safeSanitize(`<div class="day-number">${day}</div>`);
         container.appendChild(cell);
     }
 
@@ -313,7 +326,7 @@ function renderCalendar() {
             cell.classList.add('has-workout');
         }
 
-        cell.innerHTML = DOMPurify.sanitize(`
+        cell.innerHTML = safeSanitize(`
                     <div class="day-number">${day}</div>
                     <div class="day-icons">${workout ? getWorkoutIcons(workout.body_parts) : ''}</div>
                 `);
@@ -398,7 +411,7 @@ function renderBodyPartsGrid() {
         // Checkbox area
         const checkArea = document.createElement('div');
         checkArea.style.cssText = 'display: flex; align-items: center; gap: 10px; min-width: 120px;';
-        checkArea.innerHTML = DOMPurify.sanitize(`
+        checkArea.innerHTML = safeSanitize(`
                     <div style="width: 20px; height: 20px; border: 2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: ${isSelected ? 'var(--primary)' : 'transparent'};">
                         ${isSelected ? '<span style="color: white; font-size: 0.7rem;">✓</span>' : ''}
                     </div>
@@ -416,7 +429,7 @@ function renderBodyPartsGrid() {
         // Weight inputs (always visible, but disabled if not selected)
         const inputsArea = document.createElement('div');
         inputsArea.style.cssText = 'display: flex; align-items: center; gap: 6px;';
-        inputsArea.innerHTML = DOMPurify.sanitize(`
+        inputsArea.innerHTML = safeSanitize(`
                     <input type="text" inputmode="numeric" placeholder="kg" value="${wd.kg}" 
                         ${isSelected ? '' : 'disabled'}
                         onchange="updateWeight('${key}', 'kg', this.value)"

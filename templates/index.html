@@ -504,7 +504,7 @@
         }
     </style>
     <!-- DOMPurify for XSS protection -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="/static/js/purify.min.js"></script>
 </head>
 
 <body>
@@ -609,6 +609,15 @@
     </div>
 
     <script>
+        // Safety wrapper for DOMPurify
+        function safeSanitize(html) {
+            if (typeof DOMPurify !== 'undefined') {
+                return DOMPurify.sanitize(html);
+            }
+            console.warn('DOMPurify not loaded, falling back to raw HTML');
+            return html;
+        }
+
         let refreshCooldown = false;
         let cooldownTimer = null;
         const REFRESH_COOLDOWN_MS = 30000;
@@ -693,10 +702,10 @@
                 if (data.neglected_parts && data.neglected_parts.length > 0) {
                     neglectedCard.style.display = 'block';
                     tipsCard.style.display = 'none';
-                    neglectedList.innerHTML = data.neglected_parts
+                    neglectedList.innerHTML = safeSanitize(data.neglected_parts
                         .slice(0, 4)
                         .map(p => `<span class="neglected-item">${p.emoji} ${p.name} (${p.count}x)</span>`)
-                        .join('');
+                        .join(''));
                 } else {
                     neglectedCard.style.display = 'none';
                     tipsCard.style.display = 'block';
@@ -783,11 +792,11 @@
             const hasData = Object.values(averages).some(v => v > 0);
 
             if (!hasData) {
-                container.innerHTML = `
+                container.innerHTML = safeSanitize(`
                     <div class="no-data-message">
                         📊 Zbieranie danych... Analiza będzie dostępna po kilku dniach.
                     </div>
-                `;
+                `);
                 summaryContainer.innerHTML = '';
                 return;
             }
