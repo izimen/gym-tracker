@@ -1,51 +1,6 @@
-        /* Local Fonts */
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 300;
-            font-display: swap;
-            src: url('/static/fonts/Inter-Light.ttf') format('truetype');
-        }
-
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 400;
-            font-display: swap;
-            src: url('/static/fonts/Inter-Regular.ttf') format('truetype');
-        }
-
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 500;
-            font-display: swap;
-            src: url('/static/fonts/Inter-Medium.ttf') format('truetype');
-        }
-
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 600;
-            font-display: swap;
-            src: url('/static/fonts/Inter-SemiBold.ttf') format('truetype');
-        }
-
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 700;
-            font-display: swap;
-            src: url('/static/fonts/Inter-Bold.ttf') format('truetype');
-        }
-
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 800;
-            font-display: swap;
-            src: url('/static/fonts/Inter-ExtraBold.ttf') format('truetype');
-        }
+        /* Fonts loaded from Google Fonts CDN in dashboard.html 
+           Using only 4 weights: 400, 500, 600, 700 (~80KB vs 2MB local TTF)
+           Font: Inter with display=swap for fast rendering */
 
         /* Critical CSS moved to inline styles in dashboard.html for performance
         * { margin: 0; padding: 0; box-sizing: border-box; }
