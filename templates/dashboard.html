@@ -1230,30 +1230,40 @@
                 <div class="card-title">📊 Statystyki obłożenia</div>
 
                 <!-- Quick stats row -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;">
-                    <div style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);"
+                <div
+                    style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch;">
+                    <div
+                        style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center; flex: 1; min-width: 100px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); white-space: nowrap;"
                             id="statsAvgWeekday">
                             --</div>
-                        <div style="font-size: 0.6rem; color: var(--text-muted);" id="statsWeekdayLabel">Śr. piątek
+                        <div style="font-size: 0.6rem; color: var(--text-muted); white-space: nowrap;"
+                            id="statsWeekdayLabel">Śr. piątek
                         </div>
                     </div>
-                    <div style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);"
+                    <div
+                        style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center; flex: 1; min-width: 100px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); white-space: nowrap;"
                             id="statsWeekdayHour">--</div>
-                        <div style="font-size: 0.6rem; color: var(--text-muted);" id="statsWeekdayHourLabel">Śr. piątek
+                        <div style="font-size: 0.6rem; color: var(--text-muted); white-space: nowrap;"
+                            id="statsWeekdayHourLabel">Śr. piątek
                             o tej porze</div>
                     </div>
-                    <div style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);" id="statsAvgHour">
+                    <div
+                        style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center; flex: 1; min-width: 100px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); white-space: nowrap;"
+                            id="statsAvgHour">
                             --</div>
-                        <div style="font-size: 0.6rem; color: var(--text-muted);">Śr. o tej porze</div>
+                        <div style="font-size: 0.6rem; color: var(--text-muted); white-space: nowrap;">Śr. o tej porze
+                        </div>
                     </div>
-                    <div style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);" id="statsLiveNow">
+                    <div
+                        style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center; flex: 1; min-width: 100px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); white-space: nowrap;"
+                            id="statsLiveNow">
                             --
                         </div>
-                        <div style="font-size: 0.6rem; color: var(--text-muted);">Teraz</div>
+                        <div style="font-size: 0.6rem; color: var(--text-muted); white-space: nowrap;">Teraz</div>
                     </div>
                 </div>
 
