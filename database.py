@@ -61,8 +61,8 @@ def is_complete_day(hours_data: dict, weekday: int) -> bool:
     """
     Check if a day has complete data (not a holiday/early closure).
     
-    A day is INCOMPLETE if it has 4+ consecutive hours with zero occupancy,
-    which suggests early closure or holiday hours.
+    A day is INCOMPLETE if it has 4+ consecutive hours with zero occupancy
+    WITHIN the expected gym hours, which suggests early closure or holiday.
     
     Args:
         hours_data: {hour: occupancy} dictionary for a single day
@@ -89,13 +89,12 @@ def is_complete_day(hours_data: dict, weekday: int) -> bool:
     if len(missing_hours) > 3:
         return False
     
-    # Check for 4+ consecutive zeros (suggests early closure)
-    sorted_hours = sorted(hours_data.keys())
+    # Check for 4+ consecutive zeros ONLY within expected gym hours
     consecutive_zeros = 0
     max_consecutive_zeros = 0
     
-    for hour in sorted_hours:
-        occupancy = hours_data[hour]
+    for hour in range(first_hour, last_hour + 1):
+        occupancy = hours_data.get(hour, 0)
         if occupancy == 0:
             consecutive_zeros += 1
             max_consecutive_zeros = max(max_consecutive_zeros, consecutive_zeros)
