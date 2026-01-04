@@ -25,6 +25,7 @@ let weightData = {};  // {part: {kg, sets, reps}}
 let workoutsData = {};
 let bodyPartsConfig = {};
 let heatmapYear = new Date().getFullYear();  // Year for heatmap navigation
+let completenessData = {};  // {date: {status: 'complete'|'partial'|'missing', ...}}
 
 // ============================================
 // TAB SWITCHING
@@ -202,7 +203,7 @@ async function startApp() {
     fetchLiveCount();
 
     await fetchDashboard();
-    await fetchMonthWorkouts();
+    await Promise.all([fetchMonthWorkouts(), fetchCompleteness()]);
     renderCalendar();
     renderLegend();
 
@@ -281,6 +282,18 @@ async function fetchMonthWorkouts() {
     }
 }
 
+async function fetchCompleteness() {
+    try {
+        const response = await fetch(`/api/analytics/completeness/${currentYear}/${currentMonth}`);
+        const data = await response.json();
+        if (data.days) {
+            completenessData = data.days;
+        }
+    } catch (error) {
+        console.error('Error fetching completeness:', error);
+    }
+}
+
 function renderCalendar() {
     const container = document.getElementById('calendarDays');
     container.innerHTML = '';
@@ -326,9 +339,29 @@ function renderCalendar() {
             cell.classList.add('has-workout');
         }
 
+        // Get data completeness status for this day (only for past days, not today or future)
+        const dayCompleteness = completenessData[dateStr];
+        let completenessClass = '';
+        let completenessTitle = '';
+        const isPastDay = dateStr < todayStr;  // Only show dots for completed days
+
+        if (dayCompleteness && isPastDay) {
+            if (dayCompleteness.status === 'complete') {
+                completenessClass = 'data-complete';
+                completenessTitle = `Pełne dane (${dayCompleteness.hours_collected}/${dayCompleteness.hours_expected}h)`;
+            } else if (dayCompleteness.status === 'partial') {
+                completenessClass = 'data-partial';
+                completenessTitle = `Częściowe dane (${dayCompleteness.hours_collected}/${dayCompleteness.hours_expected}h)`;
+            } else {
+                completenessClass = 'data-missing';
+                completenessTitle = `Brak danych (${dayCompleteness.hours_collected}/${dayCompleteness.hours_expected}h)`;
+            }
+        }
+
         cell.innerHTML = safeSanitize(`
                     <div class="day-number">${day}</div>
                     <div class="day-icons">${workout ? getWorkoutIcons(workout.body_parts) : ''}</div>
+                    ${completenessClass ? `<span class="data-dot ${completenessClass}" title="${completenessTitle}"></span>` : ''}
                 `);
 
         cell.onclick = () => openModal(dateStr);
@@ -372,7 +405,7 @@ function prevMonth() {
         currentMonth = 12;
         currentYear--;
     }
-    fetchMonthWorkouts().then(renderCalendar);
+    Promise.all([fetchMonthWorkouts(), fetchCompleteness()]).then(renderCalendar);
 }
 
 function nextMonth() {
@@ -381,7 +414,7 @@ function nextMonth() {
         currentMonth = 1;
         currentYear++;
     }
-    fetchMonthWorkouts().then(renderCalendar);
+    Promise.all([fetchMonthWorkouts(), fetchCompleteness()]).then(renderCalendar);
 }
 
 // ============================================

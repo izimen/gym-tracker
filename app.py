@@ -510,6 +510,23 @@ def get_new_year_stats():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/analytics/completeness/<int:year>/<int:month>')
+def get_data_completeness(year, month):
+    """Get data collection completeness status for each day of a month"""
+    if not FIRESTORE_ENABLED:
+        return jsonify({'error': 'Firestore not available'}), 503
+    
+    try:
+        data = database.get_data_completeness_for_month(year, month)
+        return jsonify({
+            'year': year,
+            'month': month,
+            'days': data
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # =============================================================================
 # AUTHENTICATION API ENDPOINTS
 # =============================================================================

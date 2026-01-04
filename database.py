@@ -970,6 +970,102 @@ def get_hourly_averages(days: int = 30) -> dict:
     return averages
 
 
+def get_data_completeness_for_month(year: int, month: int) -> dict:
+    """
+    Get data collection completeness status for each day of a month.
+    
+    Returns: {
+        'YYYY-MM-DD': {
+            'status': 'complete' | 'partial' | 'missing',
+            'hours_collected': 12,
+            'hours_expected': 17,
+            'is_weekend': False
+        }, ...
+    }
+    
+    Status meanings:
+    - 'complete': All expected hours have data (green dot)
+    - 'partial': Missing 1-3 hours (green dot with orange border)
+    - 'missing': Missing 4+ hours or no data (red dot)
+    """
+    from calendar import monthrange
+    from datetime import date
+    
+    db = get_db()
+    
+    # Create date range for the month
+    start_date = f"{year:04d}-{month:02d}-01"
+    if month == 12:
+        end_date = f"{year+1:04d}-01-01"
+    else:
+        end_date = f"{year:04d}-{month+1:02d}-01"
+    
+    # Fetch all hourly data for this month
+    docs = db.collection('hourly_occupancy')\
+        .where('date', '>=', start_date)\
+        .where('date', '<', end_date)\
+        .stream()
+    
+    # Group by date
+    days_data = {}  # {date: {hour: occupancy}}
+    for doc in docs:
+        data = doc.to_dict()
+        date_str = data.get('date')
+        hour = data.get('hour')
+        occupancy = data.get('occupancy', 0)
+        
+        if date_str and hour is not None:
+            if date_str not in days_data:
+                days_data[date_str] = {}
+            days_data[date_str][hour] = occupancy
+    
+    # Analyze each day in the month
+    result = {}
+    _, num_days = monthrange(year, month)
+    
+    for day in range(1, num_days + 1):
+        date_str = f"{year:04d}-{month:02d}-{day:02d}"
+        
+        # Determine weekday (0=Monday, 6=Sunday)
+        d = date(year, month, day)
+        weekday = d.weekday()
+        is_weekend = weekday in (5, 6)
+        
+        # Get expected hours
+        if is_weekend:
+            first_hour, last_hour = GYM_HOURS['weekend']
+        else:
+            first_hour, last_hour = GYM_HOURS['weekday']
+        
+        expected_hours = set(range(first_hour, last_hour + 1))
+        hours_expected = len(expected_hours)
+        
+        # Get actual hours
+        hours_data = days_data.get(date_str, {})
+        actual_hours = set(hours_data.keys())
+        hours_collected = len(actual_hours & expected_hours)  # Only count expected hours
+        
+        # Determine status
+        missing_count = hours_expected - hours_collected
+        
+        if hours_collected == 0:
+            status = 'missing'
+        elif missing_count == 0:
+            status = 'complete'
+        elif missing_count <= 3:
+            status = 'partial'
+        else:
+            status = 'missing'
+        
+        result[date_str] = {
+            'status': status,
+            'hours_collected': hours_collected,
+            'hours_expected': hours_expected,
+            'is_weekend': is_weekend
+        }
+    
+    return result
+
 
 def get_best_hours(top_n: int = 3) -> list:
     """
