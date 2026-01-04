@@ -146,11 +146,8 @@ The repo includes automatic deployment via GitHub Actions:
 ## 🛡️ Security
 
 - Credentials stored exclusively in environment variables
-- Rate limiting on auth endpoints (5/min register, 10/min login)
-- Admin endpoints protected by secret with timing-safe comparison
-- Input validation (date format, body parts, usernames)
-- Pre-commit hooks with Gitleaks secret scanning
-- GitHub Actions security scans (Gitleaks, pip-audit, safety)
+- Rate limiting on auth endpoints
+- Admin endpoints protected by secret
 - See [SECURITY.md](SECURITY.md) for vulnerability reporting
 
 ## 🤝 Contributing
@@ -180,14 +177,9 @@ gym-tracker/
 │   ├── dashboard.html  # Main dashboard
 │   ├── calendar.html   # Workout calendar
 │   └── index.html      # Legacy view
-├── scripts/security/   # Local security scripts
-│   ├── scan_secrets.sh
-│   ├── validate_env.sh
-│   └── security_audit.sh
 ├── .github/workflows/
 │   ├── deploy.yml      # Auto-deploy to Cloud Run
 │   └── security-scan.yml # Security scanning
-├── .pre-commit-config.yaml  # Pre-commit hooks
 ├── Dockerfile
 ├── requirements.txt
 ├── LICENSE
