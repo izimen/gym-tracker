@@ -1045,17 +1045,21 @@ def get_data_completeness_for_month(year: int, month: int) -> dict:
         actual_hours = set(hours_data.keys())
         hours_collected = len(actual_hours & expected_hours)  # Only count expected hours
         
-        # Determine status
-        missing_count = hours_expected - hours_collected
-        
+        # Determine status using is_complete_day for holiday/early closure detection
         if hours_collected == 0:
             status = 'missing'
-        elif missing_count == 0:
-            status = 'complete'
-        elif missing_count <= 3:
-            status = 'partial'
+        elif is_complete_day(hours_data, weekday):
+            # Full day with no early closure detected
+            missing_count = hours_expected - hours_collected
+            if missing_count == 0:
+                status = 'complete'
+            elif missing_count <= 3:
+                status = 'partial'
+            else:
+                status = 'missing'
         else:
-            status = 'missing'
+            # Early closure or holiday detected (4+ consecutive zeros)
+            status = 'holiday'  # Special status for holidays/early closures
         
         result[date_str] = {
             'status': status,

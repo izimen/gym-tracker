@@ -352,6 +352,9 @@ function renderCalendar() {
             } else if (dayCompleteness.status === 'partial') {
                 completenessClass = 'data-partial';
                 completenessTitle = `Częściowe dane (${dayCompleteness.hours_collected}/${dayCompleteness.hours_expected}h)`;
+            } else if (dayCompleteness.status === 'holiday') {
+                completenessClass = 'data-holiday';
+                completenessTitle = `Święto/skrócone godziny (${dayCompleteness.hours_collected}h)`;
             } else {
                 completenessClass = 'data-missing';
                 completenessTitle = `Brak danych (${dayCompleteness.hours_collected}/${dayCompleteness.hours_expected}h)`;

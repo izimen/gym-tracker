@@ -326,6 +326,11 @@
             background: #ef4444;
         }
 
+        .data-dot.data-holiday {
+            background: #6b7280;
+            /* Gray for holidays/early closures */
+        }
+
         /* Ensure day cell has position relative for absolute dot positioning */
         .day {
             position: relative;
