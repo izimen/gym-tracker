@@ -527,6 +527,56 @@ def get_data_completeness(year, month):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/debug/day/<date_str>')
+def debug_day_data(date_str):
+    """Debug endpoint to check raw hourly data for a specific day"""
+    if not FIRESTORE_ENABLED:
+        return jsonify({'error': 'Firestore not available'}), 503
+    
+    try:
+        db = database.get_db()
+        
+        # Fetch all hourly data for this day
+        docs = db.collection('hourly_occupancy')\
+            .where('date', '==', date_str)\
+            .stream()
+        
+        hours_data = {}
+        for doc in docs:
+            data = doc.to_dict()
+            hour = data.get('hour')
+            occupancy = data.get('occupancy', 0)
+            if hour is not None:
+                hours_data[hour] = occupancy
+        
+        # Determine weekday
+        from datetime import date as dt_date
+        parts = date_str.split('-')
+        d = dt_date(int(parts[0]), int(parts[1]), int(parts[2]))
+        weekday = d.weekday()
+        
+        # Check is_complete_day result
+        is_complete = database.is_complete_day(hours_data, weekday)
+        
+        # Get expected hours
+        if weekday in (5, 6):
+            expected_range = "8-19 (weekend)"
+        else:
+            expected_range = "6-22 (weekday)"
+        
+        return jsonify({
+            'date': date_str,
+            'weekday': weekday,
+            'weekday_name': ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd'][weekday],
+            'expected_hours': expected_range,
+            'hours_data': hours_data,
+            'hours_collected': len(hours_data),
+            'is_complete_day': is_complete
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # =============================================================================
 # AUTHENTICATION API ENDPOINTS
 # =============================================================================
