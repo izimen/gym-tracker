@@ -42,6 +42,10 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
+# Enable GZIP compression
+from flask_compress import Compress
+Compress(app)
+
 # Configuration - MUST be set via environment variables
 GYM_EMAIL = os.environ.get('GYM_EMAIL')
 GYM_PASSWORD = os.environ.get('GYM_PASSWORD')
