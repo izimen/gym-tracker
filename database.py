@@ -61,8 +61,10 @@ def is_complete_day(hours_data: dict, weekday: int) -> bool:
     """
     Check if a day has complete data (not a holiday/early closure).
     
-    A day is INCOMPLETE if it has 4+ consecutive hours with zero occupancy
-    WITHIN the expected gym hours, which suggests early closure or holiday.
+    A day is INCOMPLETE if:
+    1. It has 4+ consecutive zeros within expected gym hours
+    2. It has 4+ consecutive IDENTICAL values at the END of expected hours
+       (indicates scraper returning stale data after gym closed)
     
     Args:
         hours_data: {hour: occupancy} dictionary for a single day
@@ -89,20 +91,24 @@ def is_complete_day(hours_data: dict, weekday: int) -> bool:
     if len(missing_hours) > 3:
         return False
     
-    # Check for 4+ consecutive zeros ONLY within expected gym hours
+    # Check for 4+ consecutive zeros within expected gym hours
     consecutive_zeros = 0
-    max_consecutive_zeros = 0
-    
     for hour in range(first_hour, last_hour + 1):
         occupancy = hours_data.get(hour, 0)
         if occupancy == 0:
             consecutive_zeros += 1
-            max_consecutive_zeros = max(max_consecutive_zeros, consecutive_zeros)
+            if consecutive_zeros >= 4:
+                return False
         else:
             consecutive_zeros = 0
     
-    # 4+ consecutive zeros = likely early closure or holiday
-    if max_consecutive_zeros >= 4:
+    # Check for 4+ consecutive IDENTICAL values at END of expected hours
+    # This detects early closure where scraper returned stale data
+    end_hours = list(range(last_hour - 3, last_hour + 1))  # Last 4 hours
+    end_values = [hours_data.get(h, -1) for h in end_hours]
+    
+    if len(set(end_values)) == 1 and end_values[0] != -1:
+        # All 4 end hours have the same value - likely early closure
         return False
     
     return True
