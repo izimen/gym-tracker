@@ -11,6 +11,12 @@ import re
 import uuid
 import os
 import secrets
+import logging
+import time
+from typing import List, Dict, Any, Optional
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 # Initialize Firestore client
 db = None
@@ -883,24 +889,34 @@ def save_hourly_occupancy(occupancy_count: int):
     }, merge=True)
 
 
-def fetch_recent_hourly_data(days: int = 30) -> list:
+def fetch_recent_hourly_data(days: int = 30) -> List[Dict[str, Any]]:
     """
     Fetch all hourly occupancy data for the last N days.
     Returns a list of dicts, efficiently prefetched for use in other functions.
     """
-    db = get_db()
-    tz = pytz.timezone('Europe/Warsaw')
-    now = datetime.now(tz)
-    start_date = (now - timedelta(days=days)).strftime('%Y-%m-%d')
-    
-    docs = db.collection('hourly_occupancy')\
-        .where('date', '>=', start_date)\
-        .stream()
+    start_time = time.time()
+    try:
+        db = get_db()
+        tz = pytz.timezone('Europe/Warsaw')
+        now = datetime.now(tz)
+        start_date = (now - timedelta(days=days)).strftime('%Y-%m-%d')
         
-    return [doc.to_dict() for doc in docs]
+        docs = db.collection('hourly_occupancy')\
+            .where('date', '>=', start_date)\
+            .stream()
+            
+        data = [doc.to_dict() for doc in docs]
+        
+        duration = time.time() - start_time
+        logger.info(f"Fetched {len(data)} hourly records in {duration:.3f}s")
+        
+        return data
+    except Exception as e:
+        logger.error(f"Error fetching hourly data: {e}")
+        return []
 
 
-def get_hourly_averages(days: int = 30, cached_data: list = None) -> dict:
+def get_hourly_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None) -> Dict[int, float]:
     """
     Calculate average ENTRIES per hour of the day.
     Entries = difference between consecutive hourly readings.
@@ -1084,7 +1100,7 @@ def get_data_completeness_for_month(year: int, month: int) -> dict:
     return result
 
 
-def get_best_hours(top_n: int = 3, cached_data: list = None) -> list:
+def get_best_hours(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """
     Get the N best hours with lowest average occupancy.
     Returns: [{'hour': 6, 'avg': 5.2, 'label': '6:00'}, ...]
@@ -1152,7 +1168,7 @@ def get_hourly_stats() -> dict:
 WEEKDAY_NAMES_SHORT = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd']
 
 
-def get_daily_averages(days: int = 30, cached_data: list = None) -> dict:
+def get_daily_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None) -> Dict[str, float]:
     """
     Calculate average occupancy for each day of the week.
     Uses data from the last N days.
@@ -1242,7 +1258,7 @@ def get_week_ago_same_hour() -> dict:
     return None
 
 
-def get_best_day_hour_combos(top_n: int = 3, cached_data: list = None) -> list:
+def get_best_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """
     Get the N best day+hour combinations with lowest average entries.
     Uses sliding 2-hour windows (6-8, 7-9, 8-10, ..., 21-23) for analysis.
@@ -1361,7 +1377,7 @@ def get_best_day_hour_combos(top_n: int = 3, cached_data: list = None) -> list:
 
 
 
-def get_worst_day_hour_combos(top_n: int = 3, cached_data: list = None) -> list:
+def get_worst_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """
     Get the N worst day+hour combinations with highest average entries.
     Uses sliding 2-hour windows (6-8, 7-9, 8-10, ..., 21-23) for analysis.
@@ -1477,7 +1493,7 @@ def get_worst_day_hour_combos(top_n: int = 3, cached_data: list = None) -> list:
 
 
 
-def get_current_hour_average(cached_data: list = None) -> float:
+def get_current_hour_average(cached_data: Optional[List[Dict[str, Any]]] = None) -> float:
     """Get average occupancy for the current hour across all days."""
     tz = pytz.timezone('Europe/Warsaw')
     current_hour = datetime.now(tz).hour
@@ -1486,7 +1502,7 @@ def get_current_hour_average(cached_data: list = None) -> float:
     return averages.get(current_hour, 0)
 
 
-def get_today_average(cached_data: list = None) -> float:
+def get_today_average(cached_data: Optional[List[Dict[str, Any]]] = None) -> float:
     """Get average MAX occupancy for today's weekday."""
     tz = pytz.timezone('Europe/Warsaw')
     current_weekday = datetime.now(tz).weekday()
@@ -1496,7 +1512,7 @@ def get_today_average(cached_data: list = None) -> float:
     return averages.get(weekday_name, 0)
 
 
-def get_weekday_hour_average(weekday: int, hour: int, days: int = 30, cached_data: list = None) -> float:
+def get_weekday_hour_average(weekday: int, hour: int, days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None) -> float:
     """
     Get average occupancy for a specific weekday and hour.
     For example: average Friday at 17:00.
@@ -1519,7 +1535,7 @@ def get_weekday_hour_average(weekday: int, hour: int, days: int = 30, cached_dat
     return 0
 
 
-def get_extended_occupancy_stats() -> dict:
+def get_extended_occupancy_stats() -> Dict[str, Any]:
     """
     Get all extended occupancy statistics for the dashboard.
     OPTIMIZED: Fetches data once and passes it to all sub-functions.
