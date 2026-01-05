@@ -883,7 +883,24 @@ def save_hourly_occupancy(occupancy_count: int):
     }, merge=True)
 
 
-def get_hourly_averages(days: int = 30) -> dict:
+def fetch_recent_hourly_data(days: int = 30) -> list:
+    """
+    Fetch all hourly occupancy data for the last N days.
+    Returns a list of dicts, efficiently prefetched for use in other functions.
+    """
+    db = get_db()
+    tz = pytz.timezone('Europe/Warsaw')
+    now = datetime.now(tz)
+    start_date = (now - timedelta(days=days)).strftime('%Y-%m-%d')
+    
+    docs = db.collection('hourly_occupancy')\
+        .where('date', '>=', start_date)\
+        .stream()
+        
+    return [doc.to_dict() for doc in docs]
+
+
+def get_hourly_averages(days: int = 30, cached_data: list = None) -> dict:
     """
     Calculate average ENTRIES per hour of the day.
     Entries = difference between consecutive hourly readings.
@@ -895,24 +912,15 @@ def get_hourly_averages(days: int = 30) -> dict:
     
     Returns: {6: 12.5, 7: 18.3, ..., 22: 8.2}
     """
-    db = get_db()
-    tz = pytz.timezone('Europe/Warsaw')
-    now = datetime.now(tz)
-    
-    # Get start date
-    start_date = (now - timedelta(days=days)).strftime('%Y-%m-%d')
-    
-    # Query all hourly data from start date
-    docs = db.collection('hourly_occupancy')\
-        .where('date', '>=', start_date)\
-        .stream()
+    if cached_data is None:
+        # Fallback to fetching data if not provided (old behavior)
+        cached_data = fetch_recent_hourly_data(days)
     
     # Group data by date, then by hour
     # Structure: {date: {hour: (occupancy, weekday)}}
     daily_hourly_data = {}
     
-    for doc in docs:
-        data = doc.to_dict()
+    for data in cached_data:
         date_str = data.get('date')
         hour = data.get('hour')
         weekday = data.get('weekday')
@@ -1076,12 +1084,12 @@ def get_data_completeness_for_month(year: int, month: int) -> dict:
     return result
 
 
-def get_best_hours(top_n: int = 3) -> list:
+def get_best_hours(top_n: int = 3, cached_data: list = None) -> list:
     """
     Get the N best hours with lowest average occupancy.
     Returns: [{'hour': 6, 'avg': 5.2, 'label': '6:00'}, ...]
     """
-    averages = get_hourly_averages()
+    averages = get_hourly_averages(cached_data=cached_data)
     
     # Filter out hours with no data (avg = 0 means no data)
     hours_with_data = [(h, avg) for h, avg in averages.items() if avg > 0]
@@ -1117,16 +1125,13 @@ def get_hourly_stats() -> dict:
     tz = pytz.timezone('Europe/Warsaw')
     now = datetime.now(tz)
     
-    averages = get_hourly_averages()
-    best_hours = get_best_hours(3)
+    cached_data = fetch_recent_hourly_data(30)
     
-    # Count total data points
-    start_date = (now - timedelta(days=30)).strftime('%Y-%m-%d')
-    docs = db.collection('hourly_occupancy')\
-        .where('date', '>=', start_date)\
-        .select([])\
-        .stream()
-    data_points = sum(1 for _ in docs)
+    averages = get_hourly_averages(cached_data=cached_data)
+    best_hours = get_best_hours(3, cached_data=cached_data)
+    
+    # Use cached data for count
+    data_points = len(cached_data)
     
     # Estimate days with data
     days_with_data = data_points // 17 if data_points > 0 else 0  # ~17 hours per day (6-22)
@@ -1147,7 +1152,7 @@ def get_hourly_stats() -> dict:
 WEEKDAY_NAMES_SHORT = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd']
 
 
-def get_daily_averages(days: int = 30) -> dict:
+def get_daily_averages(days: int = 30, cached_data: list = None) -> dict:
     """
     Calculate average occupancy for each day of the week.
     Uses data from the last N days.
@@ -1159,21 +1164,13 @@ def get_daily_averages(days: int = 30) -> dict:
     
     Returns: {'Pon': 45.2, 'Wt': 52.1, ..., 'Nd': 28.5}
     """
-    db = get_db()
-    tz = pytz.timezone('Europe/Warsaw')
-    now = datetime.now(tz)
-    
-    start_date = (now - timedelta(days=days)).strftime('%Y-%m-%d')
-    
-    docs = db.collection('hourly_occupancy')\
-        .where('date', '>=', start_date)\
-        .stream()
+    if cached_data is None:
+        cached_data = fetch_recent_hourly_data(days)
     
     # First, group all data by date: {date: {hour: (occupancy, weekday)}}
     all_daily_data = {}
     
-    for doc in docs:
-        data = doc.to_dict()
+    for data in cached_data:
         weekday = data.get('weekday')
         date_str = data.get('date')
         hour = data.get('hour')
@@ -1245,27 +1242,19 @@ def get_week_ago_same_hour() -> dict:
     return None
 
 
-def get_best_day_hour_combos(top_n: int = 3) -> list:
+def get_best_day_hour_combos(top_n: int = 3, cached_data: list = None) -> list:
     """
     Get the N best day+hour combinations with lowest average entries.
     Uses sliding 2-hour windows (6-8, 7-9, 8-10, ..., 21-23) for analysis.
     Returns: [{'weekday': 'Śr', 'start_hour': 6, 'avg': 8.2, 'label': 'Śr 6:00-8:00'}, ...]
     """
-    db = get_db()
-    tz = pytz.timezone('Europe/Warsaw')
-    now = datetime.now(tz)
-    
-    start_date = (now - timedelta(days=30)).strftime('%Y-%m-%d')
-    
-    docs = db.collection('hourly_occupancy')\
-        .where('date', '>=', start_date)\
-        .stream()
+    if cached_data is None:
+        cached_data = fetch_recent_hourly_data(30)
     
     # Group data by date
     daily_data = {}
     
-    for doc in docs:
-        data = doc.to_dict()
+    for data in cached_data:
         date_str = data.get('date')
         hour = data.get('hour')
         weekday = data.get('weekday')
@@ -1372,27 +1361,19 @@ def get_best_day_hour_combos(top_n: int = 3) -> list:
 
 
 
-def get_worst_day_hour_combos(top_n: int = 3) -> list:
+def get_worst_day_hour_combos(top_n: int = 3, cached_data: list = None) -> list:
     """
     Get the N worst day+hour combinations with highest average entries.
     Uses sliding 2-hour windows (6-8, 7-9, 8-10, ..., 21-23) for analysis.
     Returns same format as get_best_day_hour_combos but sorted highest first.
     """
-    db = get_db()
-    tz = pytz.timezone('Europe/Warsaw')
-    now = datetime.now(tz)
-    
-    start_date = (now - timedelta(days=30)).strftime('%Y-%m-%d')
-    
-    docs = db.collection('hourly_occupancy')\
-        .where('date', '>=', start_date)\
-        .stream()
+    if cached_data is None:
+        cached_data = fetch_recent_hourly_data(30)
     
     # Group data by date
     daily_data = {}
     
-    for doc in docs:
-        data = doc.to_dict()
+    for data in cached_data:
         date_str = data.get('date')
         hour = data.get('hour')
         weekday = data.get('weekday')
@@ -1496,47 +1477,35 @@ def get_worst_day_hour_combos(top_n: int = 3) -> list:
 
 
 
-def get_current_hour_average() -> float:
+def get_current_hour_average(cached_data: list = None) -> float:
     """Get average occupancy for the current hour across all days."""
     tz = pytz.timezone('Europe/Warsaw')
     current_hour = datetime.now(tz).hour
     
-    averages = get_hourly_averages()
+    averages = get_hourly_averages(cached_data=cached_data)
     return averages.get(current_hour, 0)
 
 
-def get_today_average() -> float:
+def get_today_average(cached_data: list = None) -> float:
     """Get average MAX occupancy for today's weekday."""
     tz = pytz.timezone('Europe/Warsaw')
     current_weekday = datetime.now(tz).weekday()
     
-    averages = get_daily_averages()
+    averages = get_daily_averages(cached_data=cached_data)
     weekday_name = WEEKDAY_NAMES_SHORT[current_weekday]
     return averages.get(weekday_name, 0)
 
 
-def get_weekday_hour_average(weekday: int, hour: int, days: int = 30) -> float:
+def get_weekday_hour_average(weekday: int, hour: int, days: int = 30, cached_data: list = None) -> float:
     """
     Get average occupancy for a specific weekday and hour.
     For example: average Friday at 17:00.
-    
-    Note: We query by date only and filter weekday/hour in memory
-    to avoid needing a composite Firestore index.
     """
-    db = get_db()
-    tz = pytz.timezone('Europe/Warsaw')
-    now = datetime.now(tz)
-    
-    start_date = (now - timedelta(days=days)).strftime('%Y-%m-%d')
-    
-    # Query only by date to avoid composite index requirement
-    docs = db.collection('hourly_occupancy')\
-        .where('date', '>=', start_date)\
-        .stream()
+    if cached_data is None:
+        cached_data = fetch_recent_hourly_data(days)
     
     values = []
-    for doc in docs:
-        data = doc.to_dict()
+    for data in cached_data:
         doc_weekday = data.get('weekday')
         doc_hour = data.get('hour')
         
@@ -1553,12 +1522,17 @@ def get_weekday_hour_average(weekday: int, hour: int, days: int = 30) -> float:
 def get_extended_occupancy_stats() -> dict:
     """
     Get all extended occupancy statistics for the dashboard.
+    OPTIMIZED: Fetches data once and passes it to all sub-functions.
     """
     tz = pytz.timezone('Europe/Warsaw')
     now = datetime.now(tz)
     
-    # Calculate weekday-hour average (e.g., average Friday at 17:00)
-    today_hour_avg = get_weekday_hour_average(now.weekday(), now.hour)
+    # 1. Fetch data ONCE for all functions
+    # (30 days covers all needs for averages and best/worst lists)
+    cached_data = fetch_recent_hourly_data(30)
+    
+    # 2. Pass cached data to all functions to avoid N+1 queries
+    today_hour_avg = get_weekday_hour_average(now.weekday(), now.hour, cached_data=cached_data)
     
     return {
         # Current info
@@ -1566,15 +1540,15 @@ def get_extended_occupancy_stats() -> dict:
         'current_hour': now.hour,
         
         # Averages
-        'daily_averages': get_daily_averages(),
-        'hourly_averages': get_hourly_averages(),
-        'current_hour_avg': get_current_hour_average(),  # All days, this hour
-        'today_avg': get_today_average(),  # This weekday, MAX daily
+        'daily_averages': get_daily_averages(cached_data=cached_data),
+        'hourly_averages': get_hourly_averages(cached_data=cached_data),
+        'current_hour_avg': get_current_hour_average(cached_data=cached_data),  # All days, this hour
+        'today_avg': get_today_average(cached_data=cached_data),  # This weekday, MAX daily
         'today_hour_avg': today_hour_avg,  # This weekday, this hour
         
         # Best/Worst combos
-        'best_times': get_best_day_hour_combos(3),
-        'worst_times': get_worst_day_hour_combos(3),
+        'best_times': get_best_day_hour_combos(3, cached_data=cached_data),
+        'worst_times': get_worst_day_hour_combos(3, cached_data=cached_data),
         
         # Current weekday average for display
         'weekday_name_full': WEEKDAY_NAMES_PL[now.weekday()],
