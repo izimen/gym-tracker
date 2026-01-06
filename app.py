@@ -527,6 +527,44 @@ def get_data_completeness(year, month):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/debug/workouts/<start_date>/<end_date>')
+def debug_workouts_range(start_date, end_date):
+    """Debug endpoint to check all workouts in a date range"""
+    if not FIRESTORE_ENABLED:
+        return jsonify({'error': 'Firestore not available'}), 503
+    
+    # Simple protection
+    secret = request.args.get('secret') or ''
+    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        db = database.get_db()
+        docs = db.collection('workouts')\
+            .where('date', '>=', start_date)\
+            .where('date', '<=', end_date)\
+            .stream()
+        
+        all_workouts = []
+        for doc in docs:
+            data = doc.to_dict()
+            all_workouts.append({
+                'doc_id': doc.id,
+                'date': data.get('date'),
+                'user_id': data.get('user_id', 'NO_USER_ID'),
+                'body_parts': data.get('body_parts', [])
+            })
+        
+        return jsonify({
+            'start_date': start_date,
+            'end_date': end_date,
+            'total_count': len(all_workouts),
+            'workouts': all_workouts
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/debug/day/<date_str>')
 def debug_day_data(date_str):
     """Debug endpoint to check raw hourly data for a specific day"""
