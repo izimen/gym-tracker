@@ -726,17 +726,11 @@ def get_weekly_workout_history(weeks: int = 12, user_id: str = None) -> list:
             .stream()
         
         count = 0
-        matched_dates = []  # DEBUG
         for doc in docs:
             data = doc.to_dict()
             doc_user_id = data.get('user_id', DEFAULT_USER_ID)
             if doc_user_id == user_id:
                 count += 1
-                matched_dates.append(data.get('date'))  # DEBUG
-        
-        # DEBUG: Log matches for first week (1-7)
-        if i == 1:  # Previous week
-            logger.info(f"DEBUG weekly: user_id={user_id}, range={start_str} to {end_str}, matched={matched_dates}, count={count}")
         
         # Week number format (ISO week)
         week_num = week_start.isocalendar()[1]
