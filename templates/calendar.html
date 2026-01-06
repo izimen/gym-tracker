@@ -1120,7 +1120,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         date: selectedDate,
-                        body_parts: selectedParts
+                        body_parts: selectedParts,
+                        user_id: currentUser ? currentUser.user_id : null
                     })
                 });
 
@@ -1145,7 +1146,8 @@
             if (!confirm('Czy na pewno chcesz usunąć ten trening?')) return;
 
             try {
-                const response = await fetch(`/api/workout/${selectedDate}`, {
+                const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
+                const response = await fetch(`/api/workout/${selectedDate}${userParam}`, {
                     method: 'DELETE'
                 });
 
