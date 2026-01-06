@@ -892,6 +892,20 @@
         let workoutsData = {};
         let bodyPartsConfig = {};
 
+        // Get stored user from localStorage (same as dashboard.js)
+        function getStoredUser() {
+            const stored = localStorage.getItem('gym_user');
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch (e) {
+                    return null;
+                }
+            }
+            return null;
+        }
+        const currentUser = getStoredUser();
+
         async function init() {
             await fetchDashboard();
             await fetchMonthWorkouts();
@@ -901,7 +915,8 @@
 
         async function fetchDashboard() {
             try {
-                const response = await fetch('/api/workouts/dashboard');
+                const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
+                const response = await fetch(`/api/workouts/dashboard${userParam}`);
                 const data = await response.json();
 
                 document.getElementById('weeklyCount').textContent = data.weekly_count || 0;
@@ -922,7 +937,8 @@
 
         async function fetchMonthWorkouts() {
             try {
-                const response = await fetch(`/api/workouts/month/${currentYear}/${currentMonth}`);
+                const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
+                const response = await fetch(`/api/workouts/month/${currentYear}/${currentMonth}${userParam}`);
                 const data = await response.json();
 
                 workoutsData = {};
@@ -1202,7 +1218,8 @@
 
         async function fetchWeeklyChart() {
             try {
-                const response = await fetch('/api/analytics/weekly');
+                const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
+                const response = await fetch(`/api/analytics/weekly${userParam}`);
                 const data = await response.json();
                 if (data.weeks) {
                     renderWeeklyChart(data.weeks);
@@ -1242,7 +1259,8 @@
         async function fetchYearlyHeatmap() {
             try {
                 const year = new Date().getFullYear();
-                const response = await fetch(`/api/analytics/heatmap/${year}`);
+                const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
+                const response = await fetch(`/api/analytics/heatmap/${year}${userParam}`);
                 const data = await response.json();
                 renderHeatmap(data);
             } catch (error) {
@@ -1333,7 +1351,8 @@
 
         async function fetchComparison() {
             try {
-                const response = await fetch('/api/analytics/comparison');
+                const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
+                const response = await fetch(`/api/analytics/comparison${userParam}`);
                 const data = await response.json();
                 renderComparison(data);
             } catch (error) {
