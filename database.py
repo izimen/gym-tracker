@@ -1516,18 +1516,49 @@ def get_weekday_hour_average(weekday: int, hour: int, days: int = 30, cached_dat
     """
     Get average occupancy for a specific weekday and hour.
     For example: average Friday at 17:00.
+    ONLY uses data from complete days (days with green dot in calendar).
     """
     if cached_data is None:
         cached_data = fetch_recent_hourly_data(days)
     
-    values = []
+    # Group all data by date first
+    daily_data = {}  # {date_str: {hour: (occupancy, weekday)}}
+    
     for data in cached_data:
-        doc_weekday = data.get('weekday')
+        date_str = data.get('date')
         doc_hour = data.get('hour')
+        doc_weekday = data.get('weekday')
+        occupancy = data.get('occupancy', 0)
         
-        # Filter by weekday and hour in memory
-        if doc_weekday == weekday and doc_hour == hour:
-            occupancy = data.get('occupancy', 0)
+        if date_str and doc_hour is not None and doc_weekday is not None:
+            if date_str not in daily_data:
+                daily_data[date_str] = {}
+            daily_data[date_str][doc_hour] = (occupancy, doc_weekday)
+    
+    # Now filter for complete days only and collect values for the requested weekday+hour
+    values = []
+    for date_str, hours_data in daily_data.items():
+        if not hours_data:
+            continue
+        
+        # Get weekday from first entry in this day
+        first_hour = next(iter(hours_data.keys()))
+        _, day_weekday = hours_data[first_hour]
+        
+        # Skip if not the weekday we're looking for
+        if day_weekday != weekday:
+            continue
+        
+        # Convert to simple format for is_complete_day check
+        simple_hours_data = {h: occ for h, (occ, _) in hours_data.items()}
+        
+        # Skip incomplete days (holidays, early closures, etc.)
+        if not is_complete_day(simple_hours_data, day_weekday):
+            continue
+        
+        # Get the value for the specific hour if exists
+        if hour in hours_data:
+            occupancy, _ = hours_data[hour]
             values.append(occupancy)
     
     if values:
