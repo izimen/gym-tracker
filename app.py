@@ -46,6 +46,32 @@ limiter = Limiter(
 from flask_compress import Compress
 Compress(app)
 
+# SECURITY HEADERS
+@app.after_request
+def add_security_headers(response):
+    # Content Security Policy (CSP)
+    # Allows scripts from self, cdnjs (for DOMPurify), and inline scripts (required for current templating)
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' https: data:; "
+        "connect-src 'self' https:;"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    
+    # HSTS - Enforce HTTPS (1 year)
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    
+    # Prevent MIME type sniffing
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    
+    # Frame options to prevent clickjacking
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    
+    return response
+
 # Configuration - MUST be set via environment variables
 GYM_EMAIL = os.environ.get('GYM_EMAIL')
 GYM_PASSWORD = os.environ.get('GYM_PASSWORD')
