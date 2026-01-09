@@ -10,119 +10,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="/static/js/purify.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #7c3aed;
-            --primary-light: #a78bfa;
-            --primary-dark: #5b21b6;
-            --success: #10b981;
-            --success-light: #34d399;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --bg-dark: #0a0a12;
-            --bg-card: #12121f;
-            --bg-card-hover: #1a1a2a;
-            --bg-input: #0d0d16;
-            --text-primary: #ffffff;
-            --text-secondary: #b8b8d0;
-            --text-muted: #6b6b80;
-            --border: #1f1f35;
-            --border-light: #2a2a45;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: linear-gradient(180deg, var(--bg-dark) 0%, rgba(10, 10, 18, 0.95) 100%);
-            backdrop-filter: blur(10px);
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .header-content {
-            max-width: 900px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo-icon {
-            font-size: 1.5rem;
-        }
-
-        .logo-text {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .live-counter {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 16px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 30px;
-        }
-
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--success);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.6;
-                transform: scale(0.9);
-            }
-        }
-
-        .live-count {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--success);
-        }
-
-        .live-label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
-    </style>
     <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
 
+<body>
     <!-- HEADER -->
     <header class="header">
         <div class="header-content">
@@ -135,7 +26,7 @@
                 <span class="live-count" id="liveCount">--</span>
                 <span class="live-label">osób dzisiaj</span>
             </div>
-            <div class="user-badge" id="userBadge" onclick="logout()">👤 ---</div>
+            <div class="user-badge" id="userBadge">👤 ---</div>
         </div>
     </header>
 
@@ -183,9 +74,9 @@
 
             <!-- Month Navigation -->
             <div class="month-nav">
-                <button onclick="prevMonth()">←</button>
+                <button id="btnPrevMonth">←</button>
                 <div class="current-month" id="currentMonth">Grudzień 2025</div>
-                <button onclick="nextMonth()">→</button>
+                <button id="btnNextMonth">→</button>
             </div>
 
             <!-- Calendar Grid -->
@@ -396,11 +287,11 @@
                 <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
                     <span>🔥 Aktywność treningowa</span>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <button onclick="prevHeatmapYear()"
+                        <button id="btnHeatmapPrev"
                             style="background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); padding: 6px 12px; cursor: pointer; font-size: 0.9rem;">←</button>
                         <span id="heatmapYear"
                             style="font-size: 0.9rem; font-weight: 600; min-width: 50px; text-align: center;">2025</span>
-                        <button onclick="nextHeatmapYear()"
+                        <button id="btnHeatmapNext"
                             style="background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); padding: 6px 12px; cursor: pointer; font-size: 0.9rem;">→</button>
                     </div>
                 </div>
@@ -430,7 +321,7 @@
             <div class="card">
                 <div class="card-title">📈 Progresja ciężaru</div>
                 <div style="margin-bottom: 12px;">
-                    <select id="progressionSelect" onchange="fetchProgression(this.value)" style="
+                    <select id="progressionSelect" style="
                         width: 100%;
                         padding: 12px;
                         background: var(--bg-input);
@@ -455,12 +346,12 @@
         <div class="tab-content" id="tab-more">
             <div class="card">
                 <div class="card-title">💾 Eksport danych</div>
-                <button class="action-button" onclick="downloadBackup()">
+                <button class="action-button" id="btnBackup">
                     <span class="icon">📦</span>
                     <span class="label">Pobierz pełny backup</span>
                     <span class="arrow">→</span>
                 </button>
-                <button class="action-button" onclick="downloadWorkouts()">
+                <button class="action-button" id="btnBackupWorkouts">
                     <span class="icon">🏋️</span>
                     <span class="label">Pobierz tylko treningi</span>
                     <span class="arrow">→</span>
@@ -490,10 +381,9 @@
             <div class="modal-title" id="modalTitle">Dodaj trening</div>
             <div class="body-parts-grid" id="bodyPartsGrid"></div>
             <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeModal()">Anuluj</button>
-                <button class="modal-btn danger" id="deleteBtn" onclick="deleteWorkout()"
-                    style="display: none;">Usuń</button>
-                <button class="modal-btn primary" onclick="saveWorkout()">Zapisz</button>
+                <button class="modal-btn secondary" id="btnCloseModal">Anuluj</button>
+                <button class="modal-btn danger" id="deleteBtn" style="display: none;">Usuń</button>
+                <button class="modal-btn primary" id="btnSaveWorkout">Zapisz</button>
             </div>
         </div>
     </div>
@@ -515,8 +405,8 @@
                     <input type="password" id="loginPassword" maxlength="20" autocomplete="current-password">
                 </div>
                 <div id="loginError" class="login-error"></div>
-                <button onclick="handleLogin()" class="btn-primary">Zaloguj się</button>
-                <div class="login-switch">Nie masz konta? <a href="#" onclick="showRegister()">Zarejestruj się</a></div>
+                <button id="btnLoginSubmit" class="btn-primary">Zaloguj się</button>
+                <div class="login-switch">Nie masz konta? <a href="#" id="btnShowRegister">Zarejestruj się</a></div>
             </div>
             <div id="registerForm" class="login-form" style="display: none;">
                 <div class="form-group">
@@ -528,13 +418,13 @@
                     <input type="password" id="registerPassword" maxlength="20" autocomplete="new-password">
                 </div>
                 <div id="registerError" class="login-error"></div>
-                <button onclick="handleRegister()" class="btn-primary">Zarejestruj się</button>
-                <div class="login-switch">Masz już konto? <a href="#" onclick="showLogin()">Zaloguj się</a></div>
+                <button id="btnRegisterSubmit" class="btn-primary">Zarejestruj się</button>
+                <div class="login-switch">Masz już konto? <a href="#" id="btnShowLogin">Zaloguj się</a></div>
             </div>
         </div>
     </div>
 
     <script src="/static/js/dashboard.js" defer></script>
-    </body>
+</body>
 
 </html>

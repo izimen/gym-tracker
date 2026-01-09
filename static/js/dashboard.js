@@ -159,8 +159,13 @@ async function handleRegister() {
     }
 }
 
-function logout() {
+async function logout() {
     if (confirm('Czy na pewno chcesz się wylogować?')) {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+        } catch (e) {
+            console.error('Logout error:', e);
+        }
         clearUser();
         location.reload();
     }
@@ -238,8 +243,7 @@ async function fetchLiveCount() {
 // ============================================
 async function fetchDashboard() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/workouts/dashboard${userParam}`);
+        const response = await fetch(`/api/workouts/dashboard`);
         const data = await response.json();
 
         document.getElementById('weeklyCount').textContent = data.weekly_count || 0;
@@ -263,8 +267,7 @@ async function fetchDashboard() {
 // ============================================
 async function fetchMonthWorkouts() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/workouts/month/${currentYear}/${currentMonth}${userParam}`);
+        const response = await fetch(`/api/workouts/month/${currentYear}/${currentMonth}`);
         const data = await response.json();
 
         workoutsData = {};
@@ -542,8 +545,7 @@ async function saveWorkout() {
             body: JSON.stringify({
                 date: selectedDate,
                 body_parts: selectedParts,
-                weight_data: weightData,
-                user_id: currentUser ? currentUser.user_id : null
+                weight_data: weightData
             })
         });
 
@@ -567,8 +569,7 @@ async function deleteWorkout() {
     if (!confirm('Czy na pewno chcesz usunąć ten trening?')) return;
 
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/workout/${selectedDate}${userParam}`, {
+        const response = await fetch(`/api/workout/${selectedDate}`, {
             method: 'DELETE'
         });
 
@@ -912,8 +913,7 @@ function renderBestWorstTimes(bestTimes, worstTimes) {
 
 async function fetchWeeklyChart() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/analytics/weekly${userParam}`);
+        const response = await fetch(`/api/analytics/weekly`);
         const data = await response.json();
         if (data.weeks) {
             renderWeeklyChart(data.weeks);
@@ -955,8 +955,7 @@ function renderWeeklyChart(weeks) {
 async function fetchYearlyHeatmap(year = null) {
     try {
         const targetYear = year || heatmapYear;
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/analytics/heatmap/${targetYear}${userParam}`);
+        const response = await fetch(`/api/analytics/heatmap/${targetYear}`);
         const data = await response.json();
         renderHeatmap(data, targetYear);
     } catch (error) {
@@ -1047,8 +1046,7 @@ function renderHeatmap(data, year) {
 
 async function fetchComparison() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/analytics/comparison${userParam}`);
+        const response = await fetch(`/api/analytics/comparison`);
         const data = await response.json();
         renderComparison(data);
     } catch (error) {
@@ -1120,8 +1118,7 @@ function downloadJSON(data, filename) {
 // ============================================
 async function loadStrengthData() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/strength${userParam}`);
+        const response = await fetch(`/api/strength`);
         const data = await response.json();
 
         // Records
@@ -1190,8 +1187,7 @@ async function fetchProgression(part) {
     }
 
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/progression/${part}${userParam}`);
+        const response = await fetch(`/api/progression/${part}`);
         const data = await response.json();
         renderProgression(data.data || []);
     } catch (error) {
@@ -1263,4 +1259,72 @@ function renderProgression(data) {
 // ============================================
 // START
 // ============================================
-init();
+// ============================================
+// EVENT LISTENERS (Strict CSP)
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Auth
+    const userBadge = document.getElementById('userBadge');
+    if (userBadge) userBadge.addEventListener('click', logout);
+
+    const btnLoginSubmit = document.getElementById('btnLoginSubmit');
+    if (btnLoginSubmit) btnLoginSubmit.addEventListener('click', handleLogin);
+
+    const btnRegisterSubmit = document.getElementById('btnRegisterSubmit');
+    if (btnRegisterSubmit) btnRegisterSubmit.addEventListener('click', handleRegister);
+
+    const btnShowRegister = document.getElementById('btnShowRegister');
+    if (btnShowRegister) {
+        btnShowRegister.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRegister();
+        });
+    }
+
+    const btnShowLogin = document.getElementById('btnShowLogin');
+    if (btnShowLogin) {
+        btnShowLogin.addEventListener('click', (e) => {
+            e.preventDefault();
+            showLogin();
+        });
+    }
+
+    // Navigation
+    const btnPrevMonth = document.getElementById('btnPrevMonth');
+    if (btnPrevMonth) btnPrevMonth.addEventListener('click', prevMonth);
+
+    const btnNextMonth = document.getElementById('btnNextMonth');
+    if (btnNextMonth) btnNextMonth.addEventListener('click', nextMonth);
+
+    const btnHeatmapPrev = document.getElementById('btnHeatmapPrev');
+    if (btnHeatmapPrev) btnHeatmapPrev.addEventListener('click', prevHeatmapYear);
+
+    const btnHeatmapNext = document.getElementById('btnHeatmapNext');
+    if (btnHeatmapNext) btnHeatmapNext.addEventListener('click', nextHeatmapYear);
+
+    // Actions
+    const btnBackup = document.getElementById('btnBackup');
+    if (btnBackup) btnBackup.addEventListener('click', downloadBackup);
+
+    const btnBackupWorkouts = document.getElementById('btnBackupWorkouts');
+    if (btnBackupWorkouts) btnBackupWorkouts.addEventListener('click', downloadWorkouts);
+
+    // Modal
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
+
+    const btnSaveWorkout = document.getElementById('btnSaveWorkout');
+    if (btnSaveWorkout) btnSaveWorkout.addEventListener('click', saveWorkout);
+
+    const btnDeleteWorkout = document.getElementById('deleteBtn');
+    if (btnDeleteWorkout) btnDeleteWorkout.addEventListener('click', deleteWorkout);
+
+    // Inputs
+    const progressionSelect = document.getElementById('progressionSelect');
+    if (progressionSelect) {
+        progressionSelect.addEventListener('change', (e) => fetchProgression(e.target.value));
+    }
+
+    // Initialize
+    init();
+});
