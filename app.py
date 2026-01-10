@@ -71,12 +71,12 @@ def add_security_headers(response):
     response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
     response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
 
-    # Content Security Policy (CSP)
-    # Strict CSP: deny by default, explicitly allow needed resources
+    # Content Security Policy (CSP) 
+    # Balanced CSP: allows inline for compatibility, but includes all directives
     csp = (
-        "default-src 'none'; "
-        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-        "style-src 'self' https://fonts.googleapis.com; "
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "img-src 'self' data: https://fav.farm; "
         "font-src 'self' https://fonts.gstatic.com; "
         "connect-src 'self'; "
