@@ -8,6 +8,11 @@
             box-sizing: border-box;
         }
 
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+
         :root {
             --primary: #7c3aed;
             --primary-light: #a78bfa;
