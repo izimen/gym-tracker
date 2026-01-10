@@ -70,6 +70,13 @@ def add_security_headers(response):
     )
     response.headers['Content-Security-Policy'] = csp
     
+    # Phase 4 - Additional security headers
+    # Permissions-Policy (restrict browser features)
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    # Cross-Origin headers for isolation
+    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
+    response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
+    
     return response
 
 
