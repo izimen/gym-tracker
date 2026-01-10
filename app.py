@@ -72,14 +72,15 @@ def add_security_headers(response):
     response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
 
     # Content Security Policy (CSP)
-    # Allows scripts from self, cdnjs (for DOMPurify), and inline scripts (required for current templating)
+    # Strict CSP: deny by default, explicitly allow needed resources
     csp = (
-        "default-src 'self'; "
+        "default-src 'none'; "
         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
         "style-src 'self' https://fonts.googleapis.com; "
         "img-src 'self' data: https:; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "connect-src 'self' https:; "
+        "frame-ancestors 'self'; "
         "base-uri 'self'; "
         "form-action 'self'; "
         "object-src 'none';"
