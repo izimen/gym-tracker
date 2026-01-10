@@ -1325,6 +1325,9 @@ document.addEventListener('DOMContentLoaded', () => {
         progressionSelect.addEventListener('change', (e) => fetchProgression(e.target.value));
     }
 
+    // Ensure login form is shown by default (hide register)
+    showLogin();
+
     // Initialize
     init();
 });
