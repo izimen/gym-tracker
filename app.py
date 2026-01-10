@@ -46,6 +46,18 @@ limiter = Limiter(
 from flask_compress import Compress
 Compress(app)
 
+# Security headers (Phase 1 - basic headers)
+@app.after_request
+def add_security_headers(response):
+    # HSTS - Enforce HTTPS (1 year)
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    # Prevent MIME type sniffing
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    # Frame options to prevent clickjacking
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    return response
+
+
 # Configuration - MUST be set via environment variables
 GYM_EMAIL = os.environ.get('GYM_EMAIL')
 GYM_PASSWORD = os.environ.get('GYM_PASSWORD')
