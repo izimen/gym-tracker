@@ -77,7 +77,7 @@ def add_security_headers(response):
         "default-src 'none'; "
         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
         "style-src 'self' https://fonts.googleapis.com; "
-        "img-src 'self' data:; "
+        "img-src 'self' data: https://fav.farm; "
         "font-src 'self' https://fonts.gstatic.com; "
         "connect-src 'self'; "
         "frame-ancestors 'self'; "
