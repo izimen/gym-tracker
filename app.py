@@ -46,7 +46,7 @@ limiter = Limiter(
 from flask_compress import Compress
 Compress(app)
 
-# Security headers (Phase 1 - basic headers)
+# Security headers (Phase 1 - basic headers + Phase 3 - CSP)
 @app.after_request
 def add_security_headers(response):
     # HSTS - Enforce HTTPS (1 year)
@@ -55,6 +55,21 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     # Frame options to prevent clickjacking
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    
+    # Content Security Policy (Phase 3 - with unsafe-inline for compatibility)
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "img-src 'self' data: https://fav.farm; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "connect-src 'self'; "
+        "frame-ancestors 'self'; "
+        "base-uri 'self'; "
+        "form-action 'self';"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    
     return response
 
 
