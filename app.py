@@ -16,11 +16,12 @@ import time
 import pytz
 
 # Import database module (Firestore)
+# Import database module (Firestore)
 try:
     import database
-    FIRESTORE_ENABLED = True
     # Create admin user if not exists (preserves existing workout data)
     database.ensure_admin_user()
+    FIRESTORE_ENABLED = True
 except Exception as e:
     print(f"Firestore not available: {e}")
     FIRESTORE_ENABLED = False
@@ -28,8 +29,16 @@ except Exception as e:
 app = Flask(__name__)
 
 # CORS Configuration - restrict to allowed origins
-# Set ALLOWED_ORIGINS env var as comma-separated list (e.g., "https://example.com,http://localhost:5000")
-allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5000,http://127.0.0.1:5000').split(',')
+# Set ALLOWED_ORIGINS to strict list for production (e.g. "https://your-app.com")
+# In development (no env var), defaults to specific local ports, BUT we recommend setting this explicitly in prod.
+if os.environ.get('FLASK_ENV') == 'development':
+    default_origins = "http://localhost:5000,http://127.0.0.1:5000,http://192.168.100.2:5000"
+else:
+    # PRODUCTION SECURITY: Default to empty or specific if not set, do NOT default to localhost in prod
+    # Replace 'https://gym-tracker-733656680060.europe-central2.run.app' with your actual production URL
+    default_origins = "https://gym-tracker-733656680060.europe-central2.run.app"
+
+allowed_origins = os.environ.get('ALLOWED_ORIGINS', default_origins).split(',')
 CORS(app, origins=[o.strip() for o in allowed_origins])
 
 # Rate Limiting Configuration
@@ -45,6 +54,48 @@ limiter = Limiter(
 # Enable GZIP compression
 from flask_compress import Compress
 Compress(app)
+
+# SECURITY HEADERS
+@app.after_request
+def add_security_headers(response):
+    # Permissions Policy (formerly Feature-Policy)
+    # Disable sensitive features not used by the app
+    response.headers['Permissions-Policy'] = (
+        'accelerometer=(), camera=(), geolocation=(), '
+        'gyroscope=(), magnetometer=(), microphone=(), '
+        'payment=(), usb=()'
+    )
+
+    # Cross-Origin Isolation Headers (Protection against Spectre etc.)
+    response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
+    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
+    response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
+
+    # Content Security Policy (CSP)
+    # Allows scripts from self, cdnjs (for DOMPurify), and inline scripts (required for current templating)
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "style-src 'self' https://fonts.googleapis.com; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "connect-src 'self' https:; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "object-src 'none';"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    
+    # HSTS - Enforce HTTPS (1 year)
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    
+    # Prevent MIME type sniffing
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    
+    # Frame options to prevent clickjacking
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    
+    return response
 
 # Configuration - MUST be set via environment variables
 GYM_EMAIL = os.environ.get('GYM_EMAIL')
@@ -78,20 +129,30 @@ entries_cache = {
     'error': None
 }
 
-# Global session variable
-current_session = None
+# SESSION CONFIGURATION
+app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=True,  # Ensure HTTPS is used in production
+)
+
+# ... (rate limiting, compression, security headers remain same) ...
+
+# Global session variable for GYM website (NOT user session)
+current_gym_session = None
 session_lock = threading.Lock()
 
 
 def get_gym_session(force_new=False):
-    """Get an active session, creating a new one if necessary"""
-    global current_session
+    """Get an active session for GYM SCRAPING, creating a new one if necessary"""
+    global current_gym_session
     
     with session_lock:
-        if current_session and not force_new:
-            return current_session
+        if current_gym_session and not force_new:
+            return current_gym_session
             
-        print("Creating new login session...")
+        print("Creating new scraper login session...")
         session = requests.Session()
         session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -114,7 +175,7 @@ def get_gym_session(force_new=False):
             
             if login_response.status_code == 200:
                 print("Login successful")
-                current_session = session
+                current_gym_session = session
                 return session
             else:
                 print(f"Login failed with status: {login_response.status_code}")
@@ -125,6 +186,27 @@ def get_gym_session(force_new=False):
         except Exception as e:
             print(f"Login error: {e}")
             return None
+
+
+# =============================================================================
+# USER SESSION HELPERS
+# =============================================================================
+from flask import session
+
+def get_current_user_id():
+    """Get securely authenticated user ID from session"""
+    return session.get('user_id')
+
+def require_auth(f):
+    """Decorator to require login"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized', 'code': 'unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 
 def save_to_firestore(entries_count: int):
@@ -321,6 +403,7 @@ def calendar():
 
 
 @app.route('/api/workout', methods=['POST'])
+@require_auth
 def save_workout():
     """Save a workout for a date"""
     if not FIRESTORE_ENABLED:
@@ -340,7 +423,8 @@ def save_workout():
     body_parts = data['body_parts']
     weight_data = data.get('weight_data')
     notes = data.get('notes')
-    user_id = data.get('user_id')  # User ID from frontend
+    # SECURE: Use session user_id, ignore body
+    user_id = get_current_user_id()
     
     # Validate body parts
     valid_parts = database.BODY_PARTS.keys()
@@ -356,12 +440,14 @@ def save_workout():
 
 
 @app.route('/api/workout/<date_str>', methods=['GET'])
+@require_auth
 def get_workout(date_str):
     """Get workout for a specific date"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    # SECURE: Use session user_id
+    user_id = get_current_user_id()
     
     try:
         workout = database.get_workout(date_str, user_id)
@@ -371,12 +457,14 @@ def get_workout(date_str):
 
 
 @app.route('/api/workout/<date_str>', methods=['DELETE'])
+@require_auth
 def delete_workout(date_str):
     """Delete workout for a specific date"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    # SECURE: Use session user_id
+    user_id = get_current_user_id()
     
     try:
         database.delete_workout(date_str, user_id)
@@ -386,12 +474,13 @@ def delete_workout(date_str):
 
 
 @app.route('/api/workouts/month/<int:year>/<int:month>')
+@require_auth
 def get_month_workouts(year, month):
     """Get all workouts for a month"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id = get_current_user_id()
     
     try:
         workouts = database.get_month_workouts(year, month, user_id)
@@ -406,12 +495,13 @@ def get_month_workouts(year, month):
 
 
 @app.route('/api/workouts/dashboard')
+@require_auth
 def get_workout_dashboard():
     """Get all workout stats for the dashboard"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available', 'firestore_enabled': False}), 503
     
-    user_id = request.args.get('user_id')
+    user_id = get_current_user_id()
     
     try:
         stats = database.get_workout_dashboard_stats(user_id)
@@ -426,12 +516,13 @@ def get_workout_dashboard():
 # =============================================================================
 
 @app.route('/api/analytics/weekly')
+@require_auth
 def get_analytics_weekly():
     """Get weekly workout history for the last 12 weeks"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id = get_current_user_id()
     
     try:
         data = database.get_weekly_workout_history(weeks=12, user_id=user_id)
@@ -441,12 +532,13 @@ def get_analytics_weekly():
 
 
 @app.route('/api/analytics/heatmap/<int:year>')
+@require_auth
 def get_analytics_heatmap(year):
     """Get yearly heatmap data"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id = get_current_user_id()
     
     try:
         data = database.get_yearly_heatmap_data(year, user_id)
@@ -456,12 +548,13 @@ def get_analytics_heatmap(year):
 
 
 @app.route('/api/analytics/comparison')
+@require_auth
 def get_analytics_comparison():
     """Get month-to-month comparison"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id = get_current_user_id()
     
     try:
         data = database.get_month_comparison(user_id)
@@ -622,9 +715,20 @@ def login_user():
     result = database.authenticate_user(username, password)
     
     if result['success']:
+        # SECURE SESSION STORAGE
+        session.clear()
+        session['user_id'] = result['user_id']
+        session['username'] = result['username']
+        session.permanent = True  # Default 31 days
         return jsonify(result)
     else:
         return jsonify(result), 401
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout_user_route():
+    """Clear session"""
+    session.clear()
+    return jsonify({'success': True})
 
 
 @app.route('/api/admin/reset-password', methods=['POST'])
@@ -821,12 +925,13 @@ def export_full():
 
 
 @app.route('/api/strength')
+@require_auth
 def get_strength_stats():
     """Get strength statistics: PRs, volume, etc."""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id = get_current_user_id()
     
     try:
         stats = database.get_strength_stats(user_id)
@@ -836,12 +941,13 @@ def get_strength_stats():
 
 
 @app.route('/api/progression/<part>')
+@require_auth
 def get_progression(part):
     """Get weight progression for a specific body part"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id = get_current_user_id()
     
     try:
         progression = database.get_progression(part, user_id)
