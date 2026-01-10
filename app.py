@@ -77,13 +77,16 @@ def add_security_headers(response):
         "default-src 'none'; "
         "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
         "style-src 'self' https://fonts.googleapis.com; "
-        "img-src 'self' data: https:; "
-        "font-src 'self' https://fonts.gstatic.com data:; "
-        "connect-src 'self' https:; "
+        "img-src 'self' data:; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "connect-src 'self'; "
         "frame-ancestors 'self'; "
         "base-uri 'self'; "
         "form-action 'self'; "
-        "object-src 'none';"
+        "object-src 'none'; "
+        "manifest-src 'self'; "
+        "worker-src 'self'; "
+        "media-src 'self';"
     )
     response.headers['Content-Security-Policy'] = csp
     
