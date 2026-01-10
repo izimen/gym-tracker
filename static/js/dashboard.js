@@ -747,8 +747,11 @@ async function fetchNewYearStats() {
             // Decay rate - only show if we have at least 2 weeks
             if (data.avg_weekly_decay !== 0 && data.weekly_trend.length >= 2) {
                 document.getElementById('newYearDecay').style.display = 'flex';
+                const decay = data.avg_weekly_decay;
+                const label = decay > 0 ? 'Spadek' : 'Wzrost';
+                const absValue = Math.abs(decay);
                 document.getElementById('newYearDecayText').textContent =
-                    `Spadek ${data.avg_weekly_decay}%/tydzień`;
+                    `${label} ${absValue}%/tydzień`;
             } else {
                 document.getElementById('newYearDecay').style.display = 'none';
             }
