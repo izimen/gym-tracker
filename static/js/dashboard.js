@@ -748,7 +748,7 @@ async function fetchNewYearStats() {
             if (data.avg_weekly_decay !== 0 && data.weekly_trend.length >= 2) {
                 document.getElementById('newYearDecay').style.display = 'flex';
                 const decay = data.avg_weekly_decay;
-                const label = decay > 0 ? 'Spadek' : 'Wzrost';
+                const label = decay < 0 ? 'Spadek' : 'Wzrost';
                 const absValue = Math.abs(decay);
                 document.getElementById('newYearDecayText').textContent =
                     `${label} ${absValue}%/tydzień`;
