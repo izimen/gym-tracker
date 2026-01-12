@@ -38,7 +38,7 @@ from flask_limiter.util import get_remote_address
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["1000 per day", "150 per hour"],
     storage_uri="memory://"
 )
 
@@ -273,6 +273,7 @@ def legacy():
 
 
 @app.route('/api/occupancy')
+@limiter.limit("200 per hour")
 def get_occupancy():
     """API endpoint to get current entries (legacy endpoint name)"""
     # If cache is initializing or has no data, fetch fresh data now
@@ -282,12 +283,14 @@ def get_occupancy():
 
 
 @app.route('/api/entries')
+@limiter.limit("200 per hour")
 def get_entries():
     """API endpoint to get current entries"""
     return jsonify(entries_cache)
 
 
 @app.route('/api/stats')
+@limiter.limit("100 per hour")
 def get_stats():
     """API endpoint to get historical statistics"""
     result = {
@@ -518,6 +521,7 @@ def get_analytics_best_hours():
 
 
 @app.route('/api/analytics/extended')
+@limiter.limit("100 per hour")
 def get_analytics_extended():
     """Get extended occupancy statistics for the dashboard"""
     if not FIRESTORE_ENABLED:
@@ -531,6 +535,7 @@ def get_analytics_extended():
 
 
 @app.route('/api/analytics/new-year')
+@limiter.limit("100 per hour")
 def get_new_year_stats():
     """Get New Year's resolution effect statistics - January vs December comparison"""
     if not FIRESTORE_ENABLED:
