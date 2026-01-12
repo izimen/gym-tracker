@@ -28,6 +28,13 @@ let heatmapYear = new Date().getFullYear();  // Year for heatmap navigation
 let completenessData = {};  // {date: {status: 'complete'|'partial'|'missing', ...}}
 
 // ============================================
+// CLIENT-SIDE CACHE (Rate Limit Prevention)
+// ============================================
+let statsCache = { data: null, timestamp: 0 };
+let newYearCache = { data: null, timestamp: 0 };
+const CACHE_TTL = 60000; // 60 seconds
+
+// ============================================
 // TAB SWITCHING
 // ============================================
 document.querySelectorAll('.tab').forEach(tab => {
@@ -223,15 +230,28 @@ function init() {
 async function fetchLiveCount() {
     try {
         const response = await fetch('/api/occupancy');
+        if (!response.ok) {
+            if (response.status === 429) {
+                console.warn('Rate limited, skipping live count update');
+                return;
+            }
+            throw new Error(`HTTP error: ${response.status}`);
+        }
         const data = await response.json();
         // Display count even if status is 'initializing' - show what we have
         if (data.entries_today !== undefined && data.entries_today !== null) {
             document.getElementById('liveCount').textContent = data.entries_today;
+            // Also update statsLiveNow if it exists (on Statistics tab)
+            const statsLiveNow = document.getElementById('statsLiveNow');
+            if (statsLiveNow) {
+                statsLiveNow.textContent = data.entries_today;
+            }
         }
     } catch (error) {
         console.error('Error fetching live count:', error);
     }
 }
+
 
 // ============================================
 // DASHBOARD DATA
@@ -631,51 +651,116 @@ async function loadStatistics() {
 }
 
 async function fetchExtendedStats() {
+    // Check cache first to reduce API calls
+    if (Date.now() - statsCache.timestamp < CACHE_TTL && statsCache.data) {
+        console.log('Using cached stats data');
+        renderStatsFromData(statsCache.data);
+        return;
+    }
+
     try {
-        const [extendedRes, liveRes] = await Promise.all([
-            fetch('/api/analytics/extended'),
-            fetch('/api/occupancy')
-        ]);
-        const data = await extendedRes.json();
-        const live = await liveRes.json();
-
-        // Average for today's weekday (MAX daily)
-        document.getElementById('statsAvgWeekday').textContent =
-            data.today_avg ? Math.round(data.today_avg) : '--';
-        document.getElementById('statsWeekdayLabel').textContent =
-            data.weekday_name_full ? `Śr. ${data.weekday_name_full}` : 'Śr. dziś';
-
-        // Average for today's weekday at this hour (NEW)
-        document.getElementById('statsWeekdayHour').textContent =
-            data.today_hour_avg !== undefined ? Math.round(data.today_hour_avg) : '--';
-        document.getElementById('statsWeekdayHourLabel').textContent =
-            data.weekday_name_full ? `Śr. ${data.weekday_name_full} o tej porze` : 'Śr. dziś o tej porze';
-
-        // Average for current hour (all days)
-        document.getElementById('statsAvgHour').textContent =
-            data.current_hour_avg ? Math.round(data.current_hour_avg) : '--';
-
-        // Live count
-        if (live.entries_today !== undefined) {
-            document.getElementById('statsLiveNow').textContent = live.entries_today;
+        const response = await fetch('/api/analytics/extended');
+        if (!response.ok) {
+            if (response.status === 429) {
+                console.warn('Rate limited, skipping extended stats');
+                showStatsRateLimitMessage();
+                return;
+            }
+            throw new Error(`HTTP error: ${response.status}`);
         }
+        const data = await response.json();
 
-        // Render charts
-        renderDailyChart(data.daily_averages || {});
-        renderHourlyChart(data.hourly_averages || {});
-        renderBestWorstTimes(data.best_times || [], data.worst_times || []);
+        // Update cache
+        statsCache = { data: data, timestamp: Date.now() };
 
-        // Override with "Zamknięte" if gym is closed
-        updateGymStatusUI();
+        // Render data
+        renderStatsFromData(data);
 
     } catch (error) {
         console.error('Error fetching extended stats:', error);
+        showStatsErrorMessage();
     }
+}
+
+// Helper function to render stats from data (used by both fetch and cache)
+function renderStatsFromData(data) {
+    // Average for today's weekday (MAX daily)
+    document.getElementById('statsAvgWeekday').textContent =
+        data.today_avg ? Math.round(data.today_avg) : '--';
+    document.getElementById('statsWeekdayLabel').textContent =
+        data.weekday_name_full ? `Śr. ${data.weekday_name_full}` : 'Śr. dziś';
+
+    // Average for today's weekday at this hour
+    document.getElementById('statsWeekdayHour').textContent =
+        data.today_hour_avg !== undefined ? Math.round(data.today_hour_avg) : '--';
+    document.getElementById('statsWeekdayHourLabel').textContent =
+        data.weekday_name_full ? `Śr. ${data.weekday_name_full} o tej porze` : 'Śr. dziś o tej porze';
+
+    // Average for current hour (all days)
+    document.getElementById('statsAvgHour').textContent =
+        data.current_hour_avg ? Math.round(data.current_hour_avg) : '--';
+
+    // Render charts
+    renderDailyChart(data.daily_averages || {});
+    renderHourlyChart(data.hourly_averages || {});
+    renderBestWorstTimes(data.best_times || [], data.worst_times || []);
+
+    // Override with "Zamknięte" if gym is closed
+    updateGymStatusUI();
+}
+
+// Helper function to show rate limit message in stats UI
+function showStatsRateLimitMessage() {
+    const ids = ['statsAvgWeekday', 'statsWeekdayHour', 'statsAvgHour', 'statsLiveNow'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.textContent === 'Ładowanie...') {
+            el.textContent = '--';
+        }
+    });
+
+    const dailyChart = document.getElementById('dailyChart');
+    if (dailyChart) {
+        dailyChart.innerHTML = `<div style="text-align: center; width: 100%; color: var(--text-muted); font-size: 0.85rem;">Zbyt wiele żądań. Spróbuj za chwilę.</div>`;
+    }
+
+    const hourlyChart = document.getElementById('hourlyChart');
+    if (hourlyChart) {
+        hourlyChart.innerHTML = `<div style="text-align: center; padding: 50px; width: 100%; color: var(--text-muted); font-size: 0.85rem;">Zbyt wiele żądań. Spróbuj za chwilę.</div>`;
+    }
+}
+
+// Helper function to show error message in stats UI
+function showStatsErrorMessage() {
+    const ids = ['statsAvgWeekday', 'statsWeekdayHour', 'statsAvgHour', 'statsLiveNow'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.textContent === 'Ładowanie...') {
+            el.textContent = '--';
+        }
+    });
 }
 
 async function fetchNewYearStats() {
     try {
         const response = await fetch('/api/analytics/new-year');
+        if (!response.ok) {
+            if (response.status === 429) {
+                console.warn('Rate limited, skipping new year stats');
+                // Show placeholder for rate limit
+                const card = document.getElementById('newYearCard');
+                if (card) {
+                    card.style.display = 'block';
+                    document.getElementById('newYearMainChange').textContent = 'Spróbuj za chwilę';
+                    document.getElementById('newYearMainChange').style.fontSize = '0.85rem';
+                    document.getElementById('newYearWeekday').textContent = 'Zbyt wiele żądań';
+                    document.getElementById('newYearPeak').textContent = '';
+                    document.getElementById('newYearTrend').style.display = 'none';
+                }
+                return;
+            }
+            throw new Error(`HTTP error: ${response.status}`);
+        }
         const data = await response.json();
 
         if (!data.has_data) {
