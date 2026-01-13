@@ -474,7 +474,7 @@ function renderBodyPartsGrid() {
                     <span style="font-size: 1.3rem;">${config.emoji}</span>
                     <span style="font-size: 0.85rem; font-weight: 500;">${config.name}</span>
                 `);
-        checkArea.onclick = () => togglePart(key);
+        checkArea.addEventListener('click', () => togglePart(key));
         wrapper.appendChild(checkArea);
 
         // Spacer
@@ -482,33 +482,50 @@ function renderBodyPartsGrid() {
         spacer.style.flex = '1';
         wrapper.appendChild(spacer);
 
-        // Weight inputs (always visible, but disabled if not selected)
+        // Weight inputs - create programmatically to avoid DOMPurify stripping event handlers
         const inputsArea = document.createElement('div');
         inputsArea.style.cssText = 'display: flex; align-items: center; gap: 6px;';
-        inputsArea.innerHTML = safeSanitize(`
-                    <input type="text" inputmode="numeric" placeholder="kg" value="${wd.kg}" 
-                        ${isSelected ? '' : 'disabled'}
-                        oninput="updateWeight('${key}', 'kg', this.value)"
-                        onclick="event.stopPropagation()"
-                        style="width: 45px; padding: 8px 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; text-align: center; opacity: ${isSelected ? '1' : '0.4'};">
-                    <span style="font-size: 0.7rem; color: var(--text-muted);">×</span>
-                    <input type="text" inputmode="numeric" placeholder="ser" value="${wd.sets}"
-                        ${isSelected ? '' : 'disabled'}
-                        oninput="updateWeight('${key}', 'sets', this.value)"
-                        onclick="event.stopPropagation()"
-                        style="width: 35px; padding: 8px 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; text-align: center; opacity: ${isSelected ? '1' : '0.4'};">
-                    <span style="font-size: 0.7rem; color: var(--text-muted);">×</span>
-                    <input type="text" inputmode="numeric" placeholder="powt" value="${wd.reps}"
-                        ${isSelected ? '' : 'disabled'}
-                        oninput="updateWeight('${key}', 'reps', this.value)"
-                        onclick="event.stopPropagation()"
-                        style="width: 40px; padding: 8px 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; text-align: center; opacity: ${isSelected ? '1' : '0.4'};">
-                `);
+
+        // Helper function to create input
+        function createInput(placeholder, width, field, value) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.inputMode = 'numeric';
+            input.placeholder = placeholder;
+            input.value = value;
+            input.disabled = !isSelected;
+            input.style.cssText = `width: ${width}px; padding: 8px 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; text-align: center; opacity: ${isSelected ? '1' : '0.4'};`;
+
+            // Use addEventListener instead of inline handlers (DOMPurify strips inline handlers)
+            input.addEventListener('input', function () {
+                updateWeight(key, field, this.value);
+            });
+            input.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+
+            return input;
+        }
+
+        function createSeparator() {
+            const span = document.createElement('span');
+            span.style.cssText = 'font-size: 0.7rem; color: var(--text-muted);';
+            span.textContent = '×';
+            return span;
+        }
+
+        inputsArea.appendChild(createInput('kg', 45, 'kg', wd.kg));
+        inputsArea.appendChild(createSeparator());
+        inputsArea.appendChild(createInput('ser', 35, 'sets', wd.sets));
+        inputsArea.appendChild(createSeparator());
+        inputsArea.appendChild(createInput('powt', 40, 'reps', wd.reps));
+
         wrapper.appendChild(inputsArea);
 
         container.appendChild(wrapper);
     }
 }
+
 
 function updateWeight(part, field, value) {
     if (!weightData[part]) {
