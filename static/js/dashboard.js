@@ -464,6 +464,9 @@ function renderBodyPartsGrid() {
                     transition: all 0.2s;
                 `;
 
+        // Make entire wrapper clickable for toggling
+        wrapper.addEventListener('click', () => togglePart(key));
+
         // Checkbox area
         const checkArea = document.createElement('div');
         checkArea.style.cssText = 'display: flex; align-items: center; gap: 10px; min-width: 120px;';
@@ -474,7 +477,6 @@ function renderBodyPartsGrid() {
                     <span style="font-size: 1.3rem;">${config.emoji}</span>
                     <span style="font-size: 0.85rem; font-weight: 500;">${config.name}</span>
                 `);
-        checkArea.addEventListener('click', () => togglePart(key));
         wrapper.appendChild(checkArea);
 
         // Spacer
@@ -500,6 +502,7 @@ function renderBodyPartsGrid() {
             input.addEventListener('input', function () {
                 updateWeight(key, field, this.value);
             });
+            // Stop propagation so clicking input doesn't toggle the body part
             input.addEventListener('click', function (e) {
                 e.stopPropagation();
             });
@@ -525,6 +528,7 @@ function renderBodyPartsGrid() {
         container.appendChild(wrapper);
     }
 }
+
 
 
 function updateWeight(part, field, value) {
