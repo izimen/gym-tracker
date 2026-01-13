@@ -488,19 +488,19 @@ function renderBodyPartsGrid() {
         inputsArea.innerHTML = safeSanitize(`
                     <input type="text" inputmode="numeric" placeholder="kg" value="${wd.kg}" 
                         ${isSelected ? '' : 'disabled'}
-                        onchange="updateWeight('${key}', 'kg', this.value)"
+                        oninput="updateWeight('${key}', 'kg', this.value)"
                         onclick="event.stopPropagation()"
                         style="width: 45px; padding: 8px 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; text-align: center; opacity: ${isSelected ? '1' : '0.4'};">
                     <span style="font-size: 0.7rem; color: var(--text-muted);">×</span>
                     <input type="text" inputmode="numeric" placeholder="ser" value="${wd.sets}"
                         ${isSelected ? '' : 'disabled'}
-                        onchange="updateWeight('${key}', 'sets', this.value)"
+                        oninput="updateWeight('${key}', 'sets', this.value)"
                         onclick="event.stopPropagation()"
                         style="width: 35px; padding: 8px 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; text-align: center; opacity: ${isSelected ? '1' : '0.4'};">
                     <span style="font-size: 0.7rem; color: var(--text-muted);">×</span>
                     <input type="text" inputmode="numeric" placeholder="powt" value="${wd.reps}"
                         ${isSelected ? '' : 'disabled'}
-                        onchange="updateWeight('${key}', 'reps', this.value)"
+                        oninput="updateWeight('${key}', 'reps', this.value)"
                         onclick="event.stopPropagation()"
                         style="width: 40px; padding: 8px 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; text-align: center; opacity: ${isSelected ? '1' : '0.4'};">
                 `);
