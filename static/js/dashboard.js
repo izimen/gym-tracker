@@ -452,6 +452,7 @@ function renderBodyPartsGrid() {
         const wd = weightData[key] || { kg: '', sets: '', reps: '' };
 
         const wrapper = document.createElement('div');
+        wrapper.dataset.part = key;
         wrapper.style.cssText = `
                     display: flex;
                     align-items: center;
@@ -469,14 +470,30 @@ function renderBodyPartsGrid() {
 
         // Checkbox area
         const checkArea = document.createElement('div');
+        checkArea.className = 'part-check-area';
         checkArea.style.cssText = 'display: flex; align-items: center; gap: 10px; min-width: 120px;';
-        checkArea.innerHTML = safeSanitize(`
-                    <div style="width: 20px; height: 20px; border: 2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: ${isSelected ? 'var(--primary)' : 'transparent'};">
-                        ${isSelected ? '<span style="color: white; font-size: 0.7rem;">✓</span>' : ''}
-                    </div>
-                    <span style="font-size: 1.3rem;">${config.emoji}</span>
-                    <span style="font-size: 0.85rem; font-weight: 500;">${config.name}</span>
-                `);
+
+        const checkbox = document.createElement('div');
+        checkbox.className = 'part-checkbox';
+        checkbox.style.cssText = `width: 20px; height: 20px; border: 2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: ${isSelected ? 'var(--primary)' : 'transparent'};`;
+        if (isSelected) {
+            const check = document.createElement('span');
+            check.style.cssText = 'color: white; font-size: 0.7rem;';
+            check.textContent = '✓';
+            checkbox.appendChild(check);
+        }
+        checkArea.appendChild(checkbox);
+
+        const emoji = document.createElement('span');
+        emoji.style.cssText = 'font-size: 1.3rem;';
+        emoji.textContent = config.emoji;
+        checkArea.appendChild(emoji);
+
+        const name = document.createElement('span');
+        name.style.cssText = 'font-size: 0.85rem; font-weight: 500;';
+        name.textContent = config.name;
+        checkArea.appendChild(name);
+
         wrapper.appendChild(checkArea);
 
         // Spacer
@@ -484,26 +501,30 @@ function renderBodyPartsGrid() {
         spacer.style.flex = '1';
         wrapper.appendChild(spacer);
 
-        // Weight inputs - create programmatically to avoid DOMPurify stripping event handlers
+        // Weight inputs
         const inputsArea = document.createElement('div');
+        inputsArea.className = 'part-inputs-area';
         inputsArea.style.cssText = 'display: flex; align-items: center; gap: 6px;';
 
-        // Helper function to create input
         function createInput(placeholder, width, field, value) {
             const input = document.createElement('input');
             input.type = 'text';
             input.inputMode = 'numeric';
             input.placeholder = placeholder;
+            input.dataset.field = field;
             input.value = value;
             input.disabled = !isSelected;
             input.style.cssText = `width: ${width}px; padding: 8px 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; text-align: center; opacity: ${isSelected ? '1' : '0.4'};`;
 
-            // Use addEventListener instead of inline handlers (DOMPurify strips inline handlers)
             input.addEventListener('input', function () {
                 updateWeight(key, field, this.value);
             });
             // Stop propagation so clicking input doesn't toggle the body part
             input.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+            // Also stop mousedown from bubbling to prevent toggle on focus
+            input.addEventListener('mousedown', function (e) {
                 e.stopPropagation();
             });
 
@@ -530,23 +551,60 @@ function renderBodyPartsGrid() {
 }
 
 
-
+// Store raw string values; parse to int only at save time
 function updateWeight(part, field, value) {
     if (!weightData[part]) {
         weightData[part] = { kg: '', sets: '', reps: '' };
     }
-    weightData[part][field] = value ? parseInt(value) : '';
+    weightData[part][field] = value;
 }
 
 function togglePart(part) {
     const idx = selectedParts.indexOf(part);
-    if (idx > -1) {
+    const isSelecting = idx === -1;
+
+    if (isSelecting) {
+        selectedParts.push(part);
+    } else {
         selectedParts.splice(idx, 1);
         delete weightData[part];
-    } else {
-        selectedParts.push(part);
     }
-    renderBodyPartsGrid();
+
+    // Targeted DOM update — only update the toggled row, leave others untouched
+    const wrapper = document.querySelector(`[data-part="${part}"]`);
+    if (!wrapper) {
+        // Fallback: full re-render if wrapper not found
+        renderBodyPartsGrid();
+        return;
+    }
+
+    // Update wrapper styles
+    wrapper.style.background = isSelecting ? 'rgba(124, 58, 237, 0.15)' : 'var(--bg-input)';
+    wrapper.style.borderColor = isSelecting ? 'var(--primary)' : 'var(--border)';
+
+    // Update checkbox
+    const checkbox = wrapper.querySelector('.part-checkbox');
+    if (checkbox) {
+        checkbox.style.borderColor = isSelecting ? 'var(--primary)' : 'var(--border)';
+        checkbox.style.background = isSelecting ? 'var(--primary)' : 'transparent';
+        checkbox.innerHTML = '';
+        if (isSelecting) {
+            const check = document.createElement('span');
+            check.style.cssText = 'color: white; font-size: 0.7rem;';
+            check.textContent = '✓';
+            checkbox.appendChild(check);
+        }
+    }
+
+    // Update inputs (enable/disable + opacity, clear values if deselecting)
+    const inputs = wrapper.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.disabled = !isSelecting;
+        input.style.opacity = isSelecting ? '1' : '0.4';
+        if (!isSelecting) {
+            input.value = '';
+        }
+    });
 }
 
 function openModal(dateStr) {
@@ -577,13 +635,25 @@ async function saveWorkout() {
     }
 
     try {
+        // Parse raw string values to integers for the API
+        const parsedWeightData = {};
+        for (const [part, data] of Object.entries(weightData)) {
+            if (selectedParts.includes(part)) {
+                parsedWeightData[part] = {
+                    kg: data.kg ? parseInt(data.kg) || '' : '',
+                    sets: data.sets ? parseInt(data.sets) || '' : '',
+                    reps: data.reps ? parseInt(data.reps) || '' : ''
+                };
+            }
+        }
+
         const response = await fetch('/api/workout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 date: selectedDate,
                 body_parts: selectedParts,
-                weight_data: weightData,
+                weight_data: parsedWeightData,
                 user_id: currentUser ? currentUser.user_id : null
             })
         });
