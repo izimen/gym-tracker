@@ -3,7 +3,7 @@ CubeFitness Gym Entries Tracker
 Backend server that scrapes gym entry data and serves it via API
 """
 
-from flask import Flask, jsonify, render_template, request, redirect
+from flask import Flask, jsonify, render_template, request, redirect, session
 from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
@@ -27,10 +27,13 @@ except Exception as e:
 
 app = Flask(__name__)
 
+# Session secret key — MUST be set via env var in production
+app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+
 # CORS Configuration - restrict to allowed origins
 # Set ALLOWED_ORIGINS env var as comma-separated list (e.g., "https://example.com,http://localhost:5000")
 allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5000,http://127.0.0.1:5000').split(',')
-CORS(app, origins=[o.strip() for o in allowed_origins])
+CORS(app, origins=[o.strip() for o in allowed_origins], supports_credentials=True)
 
 # Rate Limiting Configuration
 from flask_limiter import Limiter
@@ -46,38 +49,20 @@ limiter = Limiter(
 from flask_compress import Compress
 Compress(app)
 
-# Security headers (Phase 1 - basic headers + Phase 3 - CSP)
-@app.after_request
-def add_security_headers(response):
-    # HSTS - Enforce HTTPS (1 year)
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    # Prevent MIME type sniffing
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    # Frame options to prevent clickjacking
-    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-    
-    # Content Security Policy (Phase 3 - with unsafe-inline for compatibility)
-    csp = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "img-src 'self' data: https://fav.farm; "
-        "font-src 'self' https://fonts.gstatic.com; "
-        "connect-src 'self'; "
-        "frame-ancestors 'self'; "
-        "base-uri 'self'; "
-        "form-action 'self';"
-    )
-    response.headers['Content-Security-Policy'] = csp
-    
-    # Phase 4 - Additional security headers
-    # Permissions-Policy (restrict browser features)
-    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
-    # Cross-Origin headers for isolation
-    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
-    response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
-    
-    return response
+# Security headers are set in the unified add_security_headers at the bottom of this file
+
+
+def get_current_user_id():
+    """Get user_id from server-side session. Returns None if not logged in."""
+    return session.get('user_id')
+
+
+def require_login():
+    """Return (user_id, None) if logged in, or (None, error_response) if not."""
+    uid = get_current_user_id()
+    if uid:
+        return uid, None
+    return None, (jsonify({'error': 'Not authenticated'}), 401)
 
 
 # Configuration - MUST be set via environment variables
@@ -377,7 +362,9 @@ def save_workout():
     body_parts = data['body_parts']
     weight_data = data.get('weight_data')
     notes = data.get('notes')
-    user_id = data.get('user_id')  # User ID from frontend
+    user_id, err = require_login()
+    if err:
+        return err
     
     # Validate body parts
     valid_parts = database.BODY_PARTS.keys()
@@ -398,7 +385,9 @@ def get_workout(date_str):
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id, err = require_login()
+    if err:
+        return err
     
     try:
         workout = database.get_workout(date_str, user_id)
@@ -413,7 +402,9 @@ def delete_workout(date_str):
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id, err = require_login()
+    if err:
+        return err
     
     try:
         database.delete_workout(date_str, user_id)
@@ -428,7 +419,9 @@ def get_month_workouts(year, month):
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id, err = require_login()
+    if err:
+        return err
     
     try:
         workouts = database.get_month_workouts(year, month, user_id)
@@ -448,7 +441,9 @@ def get_workout_dashboard():
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available', 'firestore_enabled': False}), 503
     
-    user_id = request.args.get('user_id')
+    user_id, err = require_login()
+    if err:
+        return err
     
     try:
         stats = database.get_workout_dashboard_stats(user_id)
@@ -468,7 +463,9 @@ def get_analytics_weekly():
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id, err = require_login()
+    if err:
+        return err
     
     try:
         data = database.get_weekly_workout_history(weeks=12, user_id=user_id)
@@ -483,7 +480,9 @@ def get_analytics_heatmap(year):
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id, err = require_login()
+    if err:
+        return err
     
     try:
         data = database.get_yearly_heatmap_data(year, user_id)
@@ -498,7 +497,9 @@ def get_analytics_comparison():
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id, err = require_login()
+    if err:
+        return err
     
     try:
         data = database.get_month_comparison(user_id)
@@ -638,6 +639,8 @@ def register_user():
     result = database.create_user(username, password)
     
     if result['success']:
+        session['user_id'] = result['user_id']
+        session['username'] = result['username']
         return jsonify(result)
     else:
         return jsonify(result), 400
@@ -661,9 +664,27 @@ def login_user():
     result = database.authenticate_user(username, password)
     
     if result['success']:
+        session['user_id'] = result['user_id']
+        session['username'] = result['username']
         return jsonify(result)
     else:
         return jsonify(result), 401
+
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout_user():
+    """Logout: clear server-side session"""
+    session.clear()
+    return jsonify({'success': True})
+
+
+@app.route('/api/auth/me')
+def auth_me():
+    """Check if current session is valid. Returns user info or 401."""
+    uid = get_current_user_id()
+    if uid:
+        return jsonify({'user_id': uid, 'username': session.get('username', '')})
+    return jsonify({'error': 'Not authenticated'}), 401
 
 
 @app.route('/api/admin/reset-password', methods=['POST'])
@@ -673,8 +694,8 @@ def admin_reset_password():
         return jsonify({'success': False, 'error': 'Firestore not available'}), 503
     
     
-    # Simple protection - require secret parameter (timing-safe comparison)
-    secret = request.args.get('secret') or ''
+    # Admin protection - require secret via header or query param (timing-safe comparison)
+    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
     
@@ -700,8 +721,8 @@ def list_users():
         return jsonify({'error': 'Firestore not available'}), 503
     
     
-    # Simple protection (timing-safe comparison)
-    secret = request.args.get('secret') or ''
+    # Admin protection - require secret via header or query param (timing-safe comparison)
+    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -722,8 +743,8 @@ def reset_hourly_data():
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    # Simple protection - require secret parameter (timing-safe comparison)
-    secret = request.args.get('secret') or ''
+    # Admin protection - require secret via header or query param (timing-safe comparison)
+    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -744,7 +765,7 @@ def debug_weekday_data(weekday):
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    secret = request.args.get('secret') or ''
+    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -865,7 +886,9 @@ def get_strength_stats():
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id, err = require_login()
+    if err:
+        return err
     
     try:
         stats = database.get_strength_stats(user_id)
@@ -880,7 +903,9 @@ def get_progression(part):
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    user_id = request.args.get('user_id')
+    user_id, err = require_login()
+    if err:
+        return err
     
     try:
         progression = database.get_progression(part, user_id)
@@ -913,39 +938,38 @@ def enforce_https():
 
 @app.after_request
 def add_security_headers(response):
-    """Add security and caching headers to all responses"""
+    """Add security, CSP, and caching headers to all responses (unified)"""
     
     # Security Headers
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
+    response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
     
-    # Content Security Policy - allows inline styles/scripts (needed for current app)
-    # but restricts external sources
+    # Content Security Policy (includes CDN/fonts domains needed by dashboard)
     csp = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "
-        "style-src 'self' 'unsafe-inline'; "
-        "font-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "img-src 'self' data: https://fav.farm; "
+        "font-src 'self' https://fonts.gstatic.com; "
         "connect-src 'self'; "
-        "frame-ancestors 'self';"
+        "frame-ancestors 'self'; "
+        "base-uri 'self'; "
+        "form-action 'self';"
     )
     response.headers['Content-Security-Policy'] = csp
     
-    # HSTS - Strict Transport Security (1 year)
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    
     # Caching for static assets
     if request.path.startswith('/static/'):
-        # Static files: cache for 1 year (immutable content)
         response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
     elif request.path.endswith('.html') or request.path == '/':
-        # HTML pages: always revalidate
         response.headers['Cache-Control'] = 'no-cache, must-revalidate'
     elif request.path.startswith('/api/'):
-        # API responses: no caching (dynamic data)
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     
     return response

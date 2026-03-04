@@ -116,13 +116,14 @@ async function handleLogin() {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ username, password })
         });
 
         const data = await response.json();
 
         if (data.success) {
-            storeUser({ user_id: data.user_id, username: data.username });
+            storeUser({ username: data.username });
             hideLoginOverlay();
             updateUserBadge();
             startApp();
@@ -148,13 +149,14 @@ async function handleRegister() {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ username, password })
         });
 
         const data = await response.json();
 
         if (data.success) {
-            storeUser({ user_id: data.user_id, username: data.username });
+            storeUser({ username: data.username });
             hideLoginOverlay();
             updateUserBadge();
             startApp();
@@ -166,8 +168,11 @@ async function handleRegister() {
     }
 }
 
-function logout() {
+async function logout() {
     if (confirm('Czy na pewno chcesz się wylogować?')) {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+        } catch (e) { /* ignore */ }
         clearUser();
         location.reload();
     }
@@ -182,16 +187,20 @@ function updateUserBadge() {
     }
 }
 
-function checkAuth() {
-    currentUser = getStoredUser();
-    if (currentUser) {
-        hideLoginOverlay();
-        updateUserBadge();
-        return true;
-    } else {
-        showLoginOverlay();
-        return false;
-    }
+async function checkAuth() {
+    try {
+        const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        if (res.ok) {
+            const data = await res.json();
+            storeUser({ username: data.username });
+            hideLoginOverlay();
+            updateUserBadge();
+            return true;
+        }
+    } catch (e) { /* server unreachable */ }
+    clearUser();
+    showLoginOverlay();
+    return false;
 }
 
 // Allow Enter key to submit forms
@@ -218,8 +227,8 @@ async function startApp() {
     setInterval(fetchLiveCount, 60000);
 }
 
-function init() {
-    if (checkAuth()) {
+async function init() {
+    if (await checkAuth()) {
         startApp();
     }
 }
@@ -258,8 +267,7 @@ async function fetchLiveCount() {
 // ============================================
 async function fetchDashboard() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/workouts/dashboard${userParam}`);
+        const response = await fetch('/api/workouts/dashboard', { credentials: 'same-origin' });
         const data = await response.json();
 
         document.getElementById('weeklyCount').textContent = data.weekly_count || 0;
@@ -283,8 +291,7 @@ async function fetchDashboard() {
 // ============================================
 async function fetchMonthWorkouts() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/workouts/month/${currentYear}/${currentMonth}${userParam}`);
+        const response = await fetch(`/api/workouts/month/${currentYear}/${currentMonth}`, { credentials: 'same-origin' });
         const data = await response.json();
 
         workoutsData = {};
@@ -650,11 +657,11 @@ async function saveWorkout() {
         const response = await fetch('/api/workout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({
                 date: selectedDate,
                 body_parts: selectedParts,
-                weight_data: parsedWeightData,
-                user_id: currentUser ? currentUser.user_id : null
+                weight_data: parsedWeightData
             })
         });
 
@@ -678,9 +685,9 @@ async function deleteWorkout() {
     if (!confirm('Czy na pewno chcesz usunąć ten trening?')) return;
 
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/workout/${selectedDate}${userParam}`, {
-            method: 'DELETE'
+        const response = await fetch(`/api/workout/${selectedDate}`, {
+            method: 'DELETE',
+            credentials: 'same-origin'
         });
 
         if (response.ok) {
@@ -1091,8 +1098,7 @@ function renderBestWorstTimes(bestTimes, worstTimes) {
 
 async function fetchWeeklyChart() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/analytics/weekly${userParam}`);
+        const response = await fetch('/api/analytics/weekly', { credentials: 'same-origin' });
         const data = await response.json();
         if (data.weeks) {
             renderWeeklyChart(data.weeks);
@@ -1134,8 +1140,7 @@ function renderWeeklyChart(weeks) {
 async function fetchYearlyHeatmap(year = null) {
     try {
         const targetYear = year || heatmapYear;
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/analytics/heatmap/${targetYear}${userParam}`);
+        const response = await fetch(`/api/analytics/heatmap/${targetYear}`, { credentials: 'same-origin' });
         const data = await response.json();
         renderHeatmap(data, targetYear);
     } catch (error) {
@@ -1226,8 +1231,7 @@ function renderHeatmap(data, year) {
 
 async function fetchComparison() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/analytics/comparison${userParam}`);
+        const response = await fetch('/api/analytics/comparison', { credentials: 'same-origin' });
         const data = await response.json();
         renderComparison(data);
     } catch (error) {
@@ -1299,8 +1303,7 @@ function downloadJSON(data, filename) {
 // ============================================
 async function loadStrengthData() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/strength${userParam}`);
+        const response = await fetch('/api/strength', { credentials: 'same-origin' });
         const data = await response.json();
 
         // Records
@@ -1369,8 +1372,7 @@ async function fetchProgression(part) {
     }
 
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/progression/${part}${userParam}`);
+        const response = await fetch(`/api/progression/${part}`, { credentials: 'same-origin' });
         const data = await response.json();
         renderProgression(data.data || []);
     } catch (error) {

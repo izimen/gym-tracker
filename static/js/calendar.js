@@ -18,19 +18,7 @@ let selectedParts = [];
 let workoutsData = {};
 let bodyPartsConfig = {};
 
-// Get stored user from localStorage (same as dashboard.js)
-function getStoredUser() {
-    const stored = localStorage.getItem('gym_user');
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch (e) {
-            return null;
-        }
-    }
-    return null;
-}
-const currentUser = getStoredUser();
+// Auth is now handled via server-side session cookies — no need to read user_id from localStorage.
 
 async function init() {
     await fetchDashboard();
@@ -41,8 +29,7 @@ async function init() {
 
 async function fetchDashboard() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/workouts/dashboard${userParam}`);
+        const response = await fetch('/api/workouts/dashboard', { credentials: 'same-origin' });
         const data = await response.json();
 
         document.getElementById('weeklyCount').textContent = data.weekly_count || 0;
@@ -63,8 +50,7 @@ async function fetchDashboard() {
 
 async function fetchMonthWorkouts() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/workouts/month/${currentYear}/${currentMonth}${userParam}`);
+        const response = await fetch(`/api/workouts/month/${currentYear}/${currentMonth}`, { credentials: 'same-origin' });
         const data = await response.json();
 
         workoutsData = {};
@@ -244,10 +230,10 @@ async function saveWorkout() {
         const response = await fetch('/api/workout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({
                 date: selectedDate,
-                body_parts: selectedParts,
-                user_id: currentUser ? currentUser.user_id : null
+                body_parts: selectedParts
             })
         });
 
@@ -272,9 +258,9 @@ async function deleteWorkout() {
     if (!confirm('Czy na pewno chcesz usunąć ten trening?')) return;
 
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/workout/${selectedDate}${userParam}`, {
-            method: 'DELETE'
+        const response = await fetch(`/api/workout/${selectedDate}`, {
+            method: 'DELETE',
+            credentials: 'same-origin'
         });
 
         if (response.ok) {
@@ -341,8 +327,7 @@ async function loadAnalytics() {
 
 async function fetchWeeklyChart() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/analytics/weekly${userParam}`);
+        const response = await fetch('/api/analytics/weekly', { credentials: 'same-origin' });
         const data = await response.json();
         if (data.weeks) {
             renderWeeklyChart(data.weeks);
@@ -383,8 +368,7 @@ function renderWeeklyChart(weeks) {
 async function fetchYearlyHeatmap() {
     try {
         const year = new Date().getFullYear();
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/analytics/heatmap/${year}${userParam}`);
+        const response = await fetch(`/api/analytics/heatmap/${year}`, { credentials: 'same-origin' });
         const data = await response.json();
         renderHeatmap(data);
     } catch (error) {
@@ -477,8 +461,7 @@ function renderHeatmap(data) {
 
 async function fetchComparison() {
     try {
-        const userParam = currentUser ? `?user_id=${currentUser.user_id}` : '';
-        const response = await fetch(`/api/analytics/comparison${userParam}`);
+        const response = await fetch('/api/analytics/comparison', { credentials: 'same-origin' });
         const data = await response.json();
         renderComparison(data);
     } catch (error) {
