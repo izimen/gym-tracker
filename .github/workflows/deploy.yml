@@ -32,6 +32,8 @@ jobs:
           region: ${{ env.REGION }}
           source: ./
           flags: '--allow-unauthenticated --clear-base-image'
+          env_vars: |
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}

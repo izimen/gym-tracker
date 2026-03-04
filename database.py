@@ -417,8 +417,8 @@ def ensure_admin_user():
         admin_password = os.environ.get('ADMIN_PASSWORD')
         if not admin_password:
             admin_password = secrets.token_urlsafe(16)
-            print(f"⚠️  SECURITY: Generated admin password: {admin_password}")
-            print("   Set ADMIN_PASSWORD env var to use a custom password.")
+            logger.warning("ADMIN_PASSWORD env var not set — generated a random password.")
+            logger.warning("Set ADMIN_PASSWORD env var to use a custom password.")
         
         tz = pytz.timezone('Europe/Warsaw')
         password_hash = hash_password(admin_password)
