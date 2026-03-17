@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cube Siłownia #POWER Stats v2 Glass</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f47b25",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#1a120b",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(244, 123, 37, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(244, 123, 37, 0.2);
+        }
+        .heatmap-bar {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 glass border-r border-white/5 flex flex-col p-6 gap-8">
+<div class="flex items-center gap-3">
+<div class="bg-primary p-2 rounded-lg">
+<span class="material-symbols-outlined text-background-dark font-bold">fitness_center</span>
+</div>
+<h2 class="font-bold text-lg tracking-tight">Cube #POWER</h2>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-400">dashboard</span>
+<span class="font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary border border-primary/20" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-medium">Statistics v2</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-slate-400" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-medium">Members</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-slate-400" href="#">
+<span class="material-symbols-outlined">schedule</span>
+<span class="font-medium">Schedule</span>
+</a>
+</nav>
+<div class="mt-auto">
+<div class="glass-card rounded-2xl p-4 relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-xs uppercase tracking-widest text-primary font-bold mb-1">Status Systemu</p>
+<p class="text-sm font-medium">Wszystkie systemy OK</p>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-6xl">verified</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto p-8">
+<!-- Header -->
+<header class="flex items-center justify-between mb-10">
+<div>
+<h1 class="text-4xl font-black tracking-tight text-white mb-1">Statistics v2</h1>
+<p class="text-slate-400">Premium gym management &amp; occupancy insights</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex flex-col items-end mr-4">
+<span class="text-xs text-slate-500 uppercase font-bold tracking-tighter">Live Status</span>
+<div class="flex items-center gap-2 px-4 py-2 bg-primary text-background-dark rounded-full font-bold text-sm">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-background-dark opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-background-dark"></span>
+</span>
+                            223 osób dzisiaj
+                        </div>
+</div>
+<div class="h-12 w-12 rounded-full border-2 border-primary p-0.5">
+<div class="h-full w-full rounded-full bg-cover bg-center" data-alt="User profile avatar circle" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA6dmX2MxSZf4_njpYULefzlQnvy9pLmoMt770AqagROEy7gnTN-3q4y-LVSDauMd5oUeADwAlw5Xa8eyP3dQfUNY_iYNOgBarHZbt5b9i3Md1hPNtAPjDOECPvLX3crDwJNRH_UwsKh8eLgKuRR0EXa7UAVvD0aUjkN7S0HtbR637EnNJVDOyGa7S-MQ-2ZZyzk1RAKEJuLElCTdmKW2DFu5cTCcEGawzTMf2433p9GAn--9EZYqLpRg5bbpFEtQe3MOVrAws0NHwE')"></div>
+</div>
+</div>
+</header>
+<!-- Quick Occupancy Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+<div class="glass-card p-6 rounded-2xl flex flex-col justify-between min-h-[140px]">
+<p class="text-slate-400 text-sm font-medium">Śr. piątek</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-2xl font-bold">Zamknięte</h3>
+<span class="text-slate-500 text-xs">—</span>
+</div>
+<div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
+<div class="bg-primary/20 w-0 h-full"></div>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl flex flex-col justify-between min-h-[140px]">
+<p class="text-slate-400 text-sm font-medium">Śr. piątek o tej porze</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-2xl font-bold">Zamknięte</h3>
+<span class="text-slate-500 text-xs">—</span>
+</div>
+<div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
+<div class="bg-primary/20 w-0 h-full"></div>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl flex flex-col justify-between min-h-[140px]">
+<p class="text-slate-400 text-sm font-medium">Śr. o tej porze</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-2xl font-bold text-slate-500">Zamknięte</h3>
+</div>
+<div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
+<div class="bg-white/10 w-full h-full"></div>
+</div>
+</div>
+<div class="glass p-6 rounded-2xl border-primary/40 flex flex-col justify-between min-h-[140px] relative overflow-hidden">
+<p class="text-primary text-sm font-bold tracking-widest uppercase">Teraz</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-3xl font-black text-white">ZAMKNIĘTE</h3>
+</div>
+<div class="absolute -right-2 -bottom-2 opacity-5 scale-150">
+<span class="material-symbols-outlined text-8xl">lock</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Daily Average Chart -->
+<div class="lg:col-span-2 glass rounded-3xl p-8">
+<div class="flex justify-between items-start mb-10">
+<div>
+<h3 class="text-xl font-bold mb-1">Średnia dzienna frekwencja</h3>
+<p class="text-slate-500 text-sm">Attendance by Day (Weekly Average)</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-white/5 rounded text-xs font-medium text-slate-400">Ostatnie 30 dni</span>
+</div>
+</div>
+<div class="flex items-end justify-between h-64 gap-4 px-4">
+<!-- Mon -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-gradient-to-t from-primary/20 to-primary rounded-t-lg relative group" style="height: 70%;">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 glass px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">312</div>
+</div>
+<span class="text-xs font-bold text-slate-400">PON</span>
+</div>
+<!-- Tue -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-gradient-to-t from-primary/20 to-primary rounded-t-lg relative group" style="height: 85%;">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 glass px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">354</div>
+</div>
+<span class="text-xs font-bold text-slate-400">WT</span>
+</div>
+<!-- Wed -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-gradient-to-t from-primary/10 to-primary/40 rounded-t-lg relative group" style="height: 45%;">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 glass px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">174</div>
+</div>
+<span class="text-xs font-bold text-slate-400">ŚR</span>
+</div>
+<!-- Thu -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-gradient-to-t from-primary/20 to-primary/60 rounded-t-lg relative group" style="height: 55%;">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 glass px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">236</div>
+</div>
+<span class="text-xs font-bold text-slate-400">CZW</span>
+</div>
+<!-- Fri -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-gradient-to-t from-primary/20 to-primary/70 rounded-t-lg relative group" style="height: 60%;">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 glass px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">253</div>
+</div>
+<span class="text-xs font-bold text-slate-400">PT</span>
+</div>
+<!-- Sat -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-gradient-to-t from-primary/20 to-primary/50 rounded-t-lg relative group" style="height: 50%;">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 glass px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">213</div>
+</div>
+<span class="text-xs font-bold text-slate-400">SOB</span>
+</div>
+<!-- Sun -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-gradient-to-t from-primary/10 to-primary/30 rounded-t-lg relative group" style="height: 35%;">
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 glass px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">141</div>
+</div>
+<span class="text-xs font-bold text-slate-400">ND</span>
+</div>
+</div>
+</div>
+<!-- New Year Card -->
+<div class="glass-card rounded-3xl p-8 relative overflow-hidden flex flex-col justify-center items-center text-center">
+<div class="absolute top-0 right-0 p-4">
+<span class="material-symbols-outlined text-primary/40 animate-pulse">celebration</span>
+</div>
+<div class="mb-6 relative">
+<div class="w-24 h-24 rounded-full border-4 border-dashed border-primary/30 flex items-center justify-center animate-[spin_10s_linear_infinite]"></div>
+<span class="material-symbols-outlined text-4xl text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">query_stats</span>
+</div>
+<h3 class="text-2xl font-black mb-2 uppercase tracking-tighter italic">Efekt Noworoczny</h3>
+<div class="inline-flex items-center gap-2 px-4 py-1.5 bg-white/5 rounded-full mb-4">
+<span class="w-2 h-2 bg-primary rounded-full animate-ping"></span>
+<span class="text-xs font-bold text-primary uppercase tracking-widest">Zbieranie danych...</span>
+</div>
+<p class="text-slate-400 text-sm max-w-[200px]">Pełne trendy i prognozy będą dostępne po 7 stycznia.</p>
+</div>
+</div>
+<!-- Hourly Heatmap Section -->
+<div class="mt-8 glass rounded-3xl p-8">
+<div class="flex justify-between items-center mb-8">
+<div>
+<h3 class="text-xl font-bold">Rozkład godzinowy (Wejścia)</h3>
+<p class="text-slate-500 text-sm">Analiza natężenia ruchu w ciągu dnia</p>
+</div>
+<div class="flex items-center gap-4 text-xs font-bold text-slate-500 uppercase tracking-widest">
+<span>Luz</span>
+<div class="w-32 h-2 rounded-full bg-gradient-to-r from-cyan-500 via-primary to-red-600"></div>
+<span>Tłok</span>
+</div>
+</div>
+<div class="space-y-3">
+<!-- Sample Hourly Bars -->
+<div class="flex items-center gap-4">
+<span class="w-12 text-xs font-bold text-slate-400">06:00</span>
+<div class="flex-1 h-8 bg-white/5 rounded-lg overflow-hidden flex items-center px-4">
+<div class="h-full bg-cyan-500/40 heatmap-bar rounded-r-lg" style="width: 15%"></div>
+<span class="ml-4 text-[10px] font-bold">8 osób</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="w-12 text-xs font-bold text-slate-400">10:00</span>
+<div class="flex-1 h-8 bg-white/5 rounded-lg overflow-hidden flex items-center px-4">
+<div class="h-full bg-cyan-400/60 heatmap-bar rounded-r-lg" style="width: 35%"></div>
+<span class="ml-4 text-[10px] font-bold">22 osoby</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="w-12 text-xs font-bold text-slate-400">17:00</span>
+<div class="flex-1 h-8 bg-white/5 rounded-lg overflow-hidden flex items-center px-4">
+<div class="h-full bg-primary/80 heatmap-bar rounded-r-lg" style="width: 75%"></div>
+<span class="ml-4 text-[10px] font-bold">41 osób</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="w-12 text-xs font-bold text-slate-400">20:00</span>
+<div class="flex-1 h-8 border border-red-500/50 bg-red-900/10 rounded-lg overflow-hidden flex items-center px-4">
+<div class="h-full bg-red-600 heatmap-bar rounded-r-lg" style="width: 95%"></div>
+<span class="ml-4 text-xs font-black text-red-500 uppercase">Szczyt: 52 osoby</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="w-12 text-xs font-bold text-slate-400">23:00</span>
+<div class="flex-1 h-8 bg-white/5 rounded-lg overflow-hidden flex items-center px-4">
+<div class="h-full bg-cyan-900/40 heatmap-bar rounded-r-lg" style="width: 10%"></div>
+<span class="ml-4 text-[10px] font-bold">4 osoby</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Ranking Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 pb-10">
+<!-- Top Empty -->
+<div class="glass-card rounded-3xl p-8 border-cyan-500/20">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-cyan-400">emoji_events</span>
+<h3 class="text-lg font-bold">TOP 3 Najlepsze (puste)</h3>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-cyan-400 opacity-50">01</span>
+<div>
+<p class="font-bold">Środa</p>
+<p class="text-xs text-slate-500 tracking-wide uppercase">21:00 - 23:00</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-cyan-400/50">nest_remote_comfort_sensor</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-cyan-400 opacity-50">02</span>
+<div>
+<p class="font-bold">Niedziela</p>
+<p class="text-xs text-slate-500 tracking-wide uppercase">06:00 - 09:00</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-cyan-400/50">nest_remote_comfort_sensor</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-cyan-400 opacity-50">03</span>
+<div>
+<p class="font-bold">Sobota</p>
+<p class="text-xs text-slate-500 tracking-wide uppercase">20:00 - 22:00</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-cyan-400/50">nest_remote_comfort_sensor</span>
+</div>
+</div>
+</div>
+<!-- Top Crowded -->
+<div class="glass-card rounded-3xl p-8 border-red-500/20">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-red-500">warning</span>
+<h3 class="text-lg font-bold">TOP 3 Najgorsze (tłok)</h3>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-red-500 opacity-50">01</span>
+<div>
+<p class="font-bold">Poniedziałek</p>
+<p class="text-xs text-slate-500 tracking-wide uppercase">18:00 - 20:00</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-red-500/50">group</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-red-500 opacity-50">02</span>
+<div>
+<p class="font-bold">Wtorek</p>
+<p class="text-xs text-slate-500 tracking-wide uppercase">17:00 - 19:30</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-red-500/50">group</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-red-500 opacity-50">03</span>
+<div>
+<p class="font-bold">Czwartek</p>
+<p class="text-xs text-slate-500 tracking-wide uppercase">18:30 - 20:30</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-red-500/50">group</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

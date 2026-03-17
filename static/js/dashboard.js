@@ -60,6 +60,18 @@ document.querySelectorAll('.tab').forEach(tab => {
 // ============================================
 let currentUser = null;
 
+// Wrapper for fetch that handles 401 (session expired) gracefully
+async function authFetch(url, options = {}) {
+    if (!options.credentials) options.credentials = 'same-origin';
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+        clearUser();
+        showLoginOverlay();
+        throw new Error('Session expired');
+    }
+    return res;
+}
+
 function getStoredUser() {
     const stored = localStorage.getItem('gym_user');
     if (stored) {
@@ -267,7 +279,7 @@ async function fetchLiveCount() {
 // ============================================
 async function fetchDashboard() {
     try {
-        const response = await fetch('/api/workouts/dashboard', { credentials: 'same-origin' });
+        const response = await authFetch('/api/workouts/dashboard');
         const data = await response.json();
 
         document.getElementById('weeklyCount').textContent = data.weekly_count || 0;
@@ -291,7 +303,7 @@ async function fetchDashboard() {
 // ============================================
 async function fetchMonthWorkouts() {
     try {
-        const response = await fetch(`/api/workouts/month/${currentYear}/${currentMonth}`, { credentials: 'same-origin' });
+        const response = await authFetch(`/api/workouts/month/${currentYear}/${currentMonth}`);
         const data = await response.json();
 
         workoutsData = {};
@@ -654,10 +666,9 @@ async function saveWorkout() {
             }
         }
 
-        const response = await fetch('/api/workout', {
+        const response = await authFetch('/api/workout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
             body: JSON.stringify({
                 date: selectedDate,
                 body_parts: selectedParts,
@@ -685,9 +696,8 @@ async function deleteWorkout() {
     if (!confirm('Czy na pewno chcesz usunąć ten trening?')) return;
 
     try {
-        const response = await fetch(`/api/workout/${selectedDate}`, {
-            method: 'DELETE',
-            credentials: 'same-origin'
+        const response = await authFetch(`/api/workout/${selectedDate}`, {
+            method: 'DELETE'
         });
 
         if (response.ok) {
@@ -1098,7 +1108,7 @@ function renderBestWorstTimes(bestTimes, worstTimes) {
 
 async function fetchWeeklyChart() {
     try {
-        const response = await fetch('/api/analytics/weekly', { credentials: 'same-origin' });
+        const response = await authFetch('/api/analytics/weekly');
         const data = await response.json();
         if (data.weeks) {
             renderWeeklyChart(data.weeks);
@@ -1140,7 +1150,7 @@ function renderWeeklyChart(weeks) {
 async function fetchYearlyHeatmap(year = null) {
     try {
         const targetYear = year || heatmapYear;
-        const response = await fetch(`/api/analytics/heatmap/${targetYear}`, { credentials: 'same-origin' });
+        const response = await authFetch(`/api/analytics/heatmap/${targetYear}`);
         const data = await response.json();
         renderHeatmap(data, targetYear);
     } catch (error) {
@@ -1231,7 +1241,7 @@ function renderHeatmap(data, year) {
 
 async function fetchComparison() {
     try {
-        const response = await fetch('/api/analytics/comparison', { credentials: 'same-origin' });
+        const response = await authFetch('/api/analytics/comparison');
         const data = await response.json();
         renderComparison(data);
     } catch (error) {
@@ -1303,7 +1313,7 @@ function downloadJSON(data, filename) {
 // ============================================
 async function loadStrengthData() {
     try {
-        const response = await fetch('/api/strength', { credentials: 'same-origin' });
+        const response = await authFetch('/api/strength');
         const data = await response.json();
 
         // Records
@@ -1372,7 +1382,7 @@ async function fetchProgression(part) {
     }
 
     try {
-        const response = await fetch(`/api/progression/${part}`, { credentials: 'same-origin' });
+        const response = await authFetch(`/api/progression/${part}`);
         const data = await response.json();
         renderProgression(data.data || []);
     } catch (error) {

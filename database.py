@@ -314,7 +314,7 @@ def save_daily_entry(entries_count: int):
     })
 
 
-def get_week_ago_entries() -> dict:
+def get_week_ago_entries() -> Optional[dict]:
     """
     Get entry count from exactly 7 days ago.
     Returns: {'entries': int, 'date': str} or None
@@ -334,7 +334,7 @@ def get_week_ago_entries() -> dict:
     return None
 
 
-def get_average_for_weekday(weekday: int = None) -> float:
+def get_average_for_weekday(weekday: Optional[int] = None) -> float:
     """
     Calculate average entries for a specific weekday.
     weekday: 0=Monday, 6=Sunday. If None, uses current weekday.
@@ -355,7 +355,7 @@ def get_average_for_weekday(weekday: int = None) -> float:
         entries.append(data.get('entries_count', 0))
     
     if entries:
-        return round(sum(entries) / len(entries), 1)
+        return round(float(sum(entries)) / len(entries), 1)
     return 0.0
 
 
@@ -432,7 +432,7 @@ def ensure_admin_user():
         print("Created admin user.")
 
 
-def save_workout(date_str: str, body_parts: list, weight_data: dict = None, notes: str = None, user_id: str = None):
+def save_workout(date_str: str, body_parts: list, weight_data: Optional[dict] = None, notes: Optional[str] = None, user_id: Optional[str] = None):
     """
     Save a workout for a specific date.
     Collection: workouts
@@ -469,7 +469,7 @@ def save_workout(date_str: str, body_parts: list, weight_data: dict = None, note
     doc_ref.set(data)
 
 
-def delete_workout(date_str: str, user_id: str = None):
+def delete_workout(date_str: str, user_id: Optional[str] = None):
     """Delete a workout for a specific date"""
     db = get_db()
     if not user_id:
@@ -478,7 +478,7 @@ def delete_workout(date_str: str, user_id: str = None):
     db.collection('workouts').document(doc_id).delete()
 
 
-def get_workout(date_str: str, user_id: str = None) -> dict:
+def get_workout(date_str: str, user_id: Optional[str] = None) -> Optional[dict]:
     """Get workout for a specific date"""
     db = get_db()
     if not user_id:
@@ -495,7 +495,7 @@ def get_workout(date_str: str, user_id: str = None) -> dict:
     return None
 
 
-def get_month_workouts(year: int, month: int, user_id: str = None) -> list:
+def get_month_workouts(year: int, month: int, user_id: Optional[str] = None) -> list:
     """Get all workouts for a specific month"""
     db = get_db()
     if not user_id:
@@ -525,7 +525,7 @@ def get_month_workouts(year: int, month: int, user_id: str = None) -> list:
     return workouts
 
 
-def get_body_part_counts(year: int = None, month: int = None, user_id: str = None) -> dict:
+def get_body_part_counts(year: Optional[int] = None, month: Optional[int] = None, user_id: Optional[str] = None) -> dict:
     """
     Count how many times each body part was trained.
     If year/month provided, counts for that month only.
@@ -550,7 +550,7 @@ def get_body_part_counts(year: int = None, month: int = None, user_id: str = Non
     return counts
 
 
-def get_weekly_workout_count(user_id: str = None) -> int:
+def get_weekly_workout_count(user_id: Optional[str] = None) -> int:
     """Get number of workouts in the current calendar week (Monday-Sunday)"""
     db = get_db()
     tz = pytz.timezone('Europe/Warsaw')
@@ -581,7 +581,7 @@ def get_weekly_workout_count(user_id: str = None) -> int:
     return count
 
 
-def get_monthly_workout_count(year: int = None, month: int = None, user_id: str = None) -> int:
+def get_monthly_workout_count(year: Optional[int] = None, month: Optional[int] = None, user_id: Optional[str] = None) -> int:
     """Get number of workouts in a month"""
     tz = pytz.timezone('Europe/Warsaw')
     if year is None or month is None:
@@ -592,7 +592,7 @@ def get_monthly_workout_count(year: int = None, month: int = None, user_id: str 
     return len(workouts)
 
 
-def get_neglected_parts(threshold: int = 2, user_id: str = None) -> list:
+def get_neglected_parts(threshold: int = 2, user_id: Optional[str] = None) -> list:
     """
     Find body parts that have been trained less than threshold times this month.
     Returns list of {'part': 'lydki', 'count': 1, 'name': 'Łydki'}
@@ -614,7 +614,7 @@ def get_neglected_parts(threshold: int = 2, user_id: str = None) -> list:
     return neglected
 
 
-def get_most_trained_part(user_id: str = None) -> dict:
+def get_most_trained_part(user_id: Optional[str] = None) -> Optional[dict]:
     """Get the most frequently trained body part this month (or last month if no data)"""
     # 1. Try current month
     counts = get_body_part_counts(user_id=user_id)
@@ -636,7 +636,7 @@ def get_most_trained_part(user_id: str = None) -> dict:
     if not counts:
         return None
     
-    max_part = max(counts, key=counts.get)
+    max_part = max(counts, key=lambda k: counts[k])
     if counts[max_part] == 0:
         return None
     
@@ -648,7 +648,7 @@ def get_most_trained_part(user_id: str = None) -> dict:
     }
 
 
-def get_last_workout(user_id: str = None) -> dict:
+def get_last_workout(user_id: Optional[str] = None) -> Optional[dict]:
     """Get the most recent workout"""
     db = get_db()
     tz = pytz.timezone('Europe/Warsaw')
@@ -674,7 +674,7 @@ def get_last_workout(user_id: str = None) -> dict:
     return None
 
 
-def get_workout_dashboard_stats(user_id: str = None) -> dict:
+def get_workout_dashboard_stats(user_id: Optional[str] = None) -> dict:
     """Get all stats needed for the dashboard"""
     tz = pytz.timezone('Europe/Warsaw')
     now = datetime.now(tz)
@@ -696,7 +696,7 @@ def get_workout_dashboard_stats(user_id: str = None) -> dict:
 # ADVANCED ANALYTICS - Charts and Heatmap
 # =============================================================================
 
-def get_weekly_workout_history(weeks: int = 12, user_id: str = None) -> list:
+def get_weekly_workout_history(weeks: int = 12, user_id: Optional[str] = None) -> list:
     """
     Get workout count for each of the last N weeks.
     Returns: [{"week": "2024-W49", "count": 5, "start_date": "2024-12-02"}, ...]
@@ -746,7 +746,7 @@ def get_weekly_workout_history(weeks: int = 12, user_id: str = None) -> list:
     return result
 
 
-def get_yearly_heatmap_data(year: int = None, user_id: str = None) -> dict:
+def get_yearly_heatmap_data(year: Optional[int] = None, user_id: Optional[str] = None) -> dict:
     """
     Get workout intensity for each day of the year.
     Returns: {"2024-01-15": 3, "2024-01-16": 0, ...} (count of body parts trained)
@@ -784,7 +784,7 @@ def get_yearly_heatmap_data(year: int = None, user_id: str = None) -> dict:
     }
 
 
-def get_month_comparison(user_id: str = None) -> dict:
+def get_month_comparison(user_id: Optional[str] = None) -> dict:
     """
     Compare current month with previous month.
     Returns workout stats and percentage change.
@@ -817,12 +817,12 @@ def get_month_comparison(user_id: str = None) -> dict:
         days_in_prev = (datetime(prev_year, prev_month + 1, 1) - timedelta(days=1)).day
     
     # Calculate averages per week
-    current_avg = round((current_count / days_in_current) * 7, 1) if days_in_current > 0 else 0
-    prev_avg = round((prev_count / days_in_prev) * 7, 1) if days_in_prev > 0 else 0
+    current_avg = round(float(current_count / days_in_current) * 7, 1) if days_in_current > 0 else 0
+    prev_avg = round(float(prev_count / days_in_prev) * 7, 1) if days_in_prev > 0 else 0
     
     # Percentage change
     if prev_count > 0:
-        change_percent = round(((current_count - prev_count) / prev_count) * 100, 1)
+        change_percent = round(float((current_count - prev_count) / prev_count) * 100, 1)
     else:
         change_percent = 100 if current_count > 0 else 0
     
@@ -992,7 +992,7 @@ def get_hourly_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any
     averages = {}
     for hour, values in hourly_entries.items():
         if values:
-            averages[hour] = round(sum(values) / len(values), 1)
+            averages[hour] = round(float(sum(values)) / len(values), 1)
         else:
             averages[hour] = 0
     
@@ -1228,14 +1228,14 @@ def get_daily_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any]
     for weekday in range(7):
         values = list(daily_data[weekday].values())
         if values:
-            averages[WEEKDAY_NAMES_SHORT[weekday]] = round(sum(values) / len(values), 1)
+            averages[WEEKDAY_NAMES_SHORT[weekday]] = round(float(sum(values)) / len(values), 1)
         else:
             averages[WEEKDAY_NAMES_SHORT[weekday]] = 0
     
-    return averages
+    return averages  # type: ignore[return-value]
 
 
-def get_week_ago_same_hour() -> dict:
+def get_week_ago_same_hour() -> Optional[dict]:
     """
     Get occupancy from exactly 7 days ago at the same hour.
     Returns: {'occupancy': int, 'date': str, 'hour': int} or None
@@ -1366,7 +1366,7 @@ def get_best_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str
                 'weekday_name': WEEKDAY_NAMES_SHORT[weekday],
                 'start_hour': start_hour,
                 'end_hour': end_hour,
-                'avg': round(avg, 1),
+                'avg': round(float(avg), 1),
                 'label': f"{WEEKDAY_NAMES_SHORT[weekday]} {start_hour}:00-{end_hour}:00"
             })
     
@@ -1482,7 +1482,7 @@ def get_worst_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[st
                 'weekday_name': WEEKDAY_NAMES_SHORT[weekday],
                 'start_hour': start_hour,
                 'end_hour': end_hour,
-                'avg': round(avg, 1),
+                'avg': round(float(avg), 1),
                 'label': f"{WEEKDAY_NAMES_SHORT[weekday]} {start_hour}:00-{end_hour}:00"
             })
     
@@ -1562,7 +1562,7 @@ def get_weekday_hour_average(weekday: int, hour: int, days: int = 30, cached_dat
             values.append(occupancy)
     
     if values:
-        return round(sum(values) / len(values), 1)
+        return round(float(sum(values)) / len(values), 1)
     return 0
 
 
@@ -1678,7 +1678,7 @@ def export_full_backup() -> dict:
 # PERSONAL RECORDS & PROGRESSION
 # =============================================================================
 
-def get_personal_records(user_id: str = None):
+def get_personal_records(user_id: Optional[str] = None):
     """
     Get personal records (max weight) for each body part.
     Returns dict with max kg, date, and details for each part.
@@ -1718,7 +1718,7 @@ def get_personal_records(user_id: str = None):
     return records
 
 
-def get_progression(body_part: str, user_id: str = None, limit: int = 20):
+def get_progression(body_part: str, user_id: Optional[str] = None, limit: int = 20):
     """
     Get weight progression over time for a specific body part.
     Returns list of {date, kg, sets, reps} sorted by date.
@@ -1756,7 +1756,7 @@ def get_progression(body_part: str, user_id: str = None, limit: int = 20):
     return progression[-limit:] if len(progression) > limit else progression
 
 
-def get_strength_stats(user_id: str = None):
+def get_strength_stats(user_id: Optional[str] = None):
     """
     Get combined strength statistics for the Siła tab.
     """
@@ -1864,7 +1864,7 @@ def get_month_daily_max_data(year: int, month: int) -> dict:
     
     # Calculate average
     values = list(daily_max.values())
-    average = round(sum(values) / len(values), 1) if values else 0
+    average = round(float(sum(values)) / len(values), 1) if values else 0
     
     return {
         'daily_max': daily_max,
@@ -1944,7 +1944,7 @@ def get_january_weekly_trend(year: int) -> list:
         if not values:
             continue
         
-        avg = round(sum(values) / len(values), 1)
+        avg = round(float(sum(values)) / len(values), 1)
         
         if baseline is None:
             baseline = avg
@@ -1966,7 +1966,7 @@ def get_january_weekly_trend(year: int) -> list:
     return result
 
 
-def get_new_year_effect(year: int = None) -> dict:
+def get_new_year_effect(year: Optional[int] = None) -> dict:
     """
     Calculate New Year's resolution effect statistics.
     Compares January attendance with December.
@@ -2010,14 +2010,14 @@ def get_new_year_effect(year: int = None) -> dict:
         dec_vals = dec_data['weekday_max'][wd]
         jan_vals = jan_data['weekday_max'][wd]
         
-        dec_avg = round(sum(dec_vals) / len(dec_vals), 1) if dec_vals else 0
-        jan_avg = round(sum(jan_vals) / len(jan_vals), 1) if jan_vals else 0
+        dec_avg = round(float(sum(dec_vals)) / len(dec_vals), 1) if dec_vals else 0
+        jan_avg = round(float(sum(jan_vals)) / len(jan_vals), 1) if jan_vals else 0
         
         dec_weekday_avg[wd] = dec_avg
         jan_weekday_avg[wd] = jan_avg
         
         if dec_avg > 0:
-            weekday_changes[wd] = round(((jan_avg - dec_avg) / dec_avg) * 100, 1)
+            weekday_changes[wd] = round(float((jan_avg - dec_avg) / dec_avg) * 100, 1)
         else:
             weekday_changes[wd] = 0
     
