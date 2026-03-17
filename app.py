@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 import re
 import os
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 import time
 import pytz
@@ -28,7 +28,29 @@ except Exception as e:
 app = Flask(__name__)
 
 # Session secret key — MUST be set via env var in production
-app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+# If not set, generate once and persist to file so sessions survive restarts
+_secret_key = os.environ.get('SECRET_KEY')
+if not _secret_key:
+    _secret_file = os.path.join(os.environ.get('APP_HOME', '/tmp'), '.flask_secret')
+    try:
+        with open(_secret_file, 'r') as f:
+            _secret_key = f.read().strip()
+    except FileNotFoundError:
+        _secret_key = secrets.token_hex(32)
+        try:
+            with open(_secret_file, 'w') as f:
+                f.write(_secret_key)
+        except OSError:
+            pass
+    print("WARNING: SECRET_KEY env var not set. Using file-based fallback.")
+    print("Set SECRET_KEY env var in Cloud Run for stable sessions across deployments.")
+app.secret_key = _secret_key
+
+# Session cookie configuration
+app.config['SESSION_COOKIE_SECURE'] = True       # HTTPS only
+app.config['SESSION_COOKIE_HTTPONLY'] = True      # No JS access to cookie
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'    # CSRF protection
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)  # 1-year sessions
 
 # CORS Configuration - restrict to allowed origins
 # Set ALLOWED_ORIGINS env var as comma-separated list (e.g., "https://example.com,http://localhost:5000")
@@ -639,6 +661,7 @@ def register_user():
     result = database.create_user(username, password)
     
     if result['success']:
+        session.permanent = True
         session['user_id'] = result['user_id']
         session['username'] = result['username']
         return jsonify(result)
@@ -664,6 +687,7 @@ def login_user():
     result = database.authenticate_user(username, password)
     
     if result['success']:
+        session.permanent = True
         session['user_id'] = result['user_id']
         session['username'] = result['username']
         return jsonify(result)
