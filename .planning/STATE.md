@@ -2,18 +2,40 @@
 
 **Project:** Gym Tracker  
 **Last Updated:** 2026-04-06  
-**Phase:** ETAP 2 ZAKONCZONY — Full Audit Implementation Complete
+**Phase:** FULLY COMPLETE — Audited, Fixed, Verified, Deployed, Live
 
 ## Current Status
 
-Full audit implementation completed in one session (2026-04-06):
-- **11 commits**, 51/55 roadmap tasks done (93%)
+Full audit implementation + bugfix hardening completed (2026-04-06):
+- **51/55 roadmap tasks** done (93%) + **8 additional bugfix PRs** (#29-36)
 - **21/23 security findings fixed** (0 Critical, 0 High remaining)
 - **~8,400 LOC removed** (dead files + inline JS)
 - **app.py refactored**: 1112 → 427 LOC (4 Flask Blueprints)
 - **27 unit tests** + CI smoke tests before deploy
 - **Firestore**: composite indexes created, weekly backups enabled
+- **GitHub Secrets**: GYM_URL, GYM_EMAIL, GYM_PASSWORD, ADMIN_SECRET configured
+- **stats-dashboard/** React prototype removed, added to .gitignore
+- **Co-Authored-By** removed from all commit history
 - All audit documents updated to final state
+
+### Verification (3 agents confirmed)
+
+- **16/16 endpoints PASS**
+- **19/19 security headers PASS**
+- **27/27 tests PASS**
+
+### PRs #29-36 Summary
+
+| PR | Fix |
+|----|-----|
+| #29 | 5 dashboard.js fetch() calls missing auth (authFetch) |
+| #30 | sorted_hours not defined in _get_day_hour_combos (analytics 500) |
+| #31 | Cache bust dashboard.js?v=2.2, password maxlength 128 |
+| #32 | CSP — restored unsafe-inline for onclick handlers |
+| #33 | Export buttons show toast instead of logging out user |
+| #34 | 6 bugs: entries_cache race, duplicate logging, CSP unused CDNs, GYM_URL guard, dead code |
+| #35 | First-hour stat inflation fix, lockout epoch timestamps, import-by-reference |
+| #36 | Added stats-dashboard/ and node_modules/ to .gitignore |
 
 ### Architecture After Refactor
 
@@ -35,7 +57,7 @@ templates/
 
 ## Key Decisions Remaining
 
-1. Decision on React stats-dashboard (integrate / separate / remove)
+1. ~~Decision on React stats-dashboard~~ — DONE (removed, added to .gitignore)
 2. Decision on Cloud Run authentication (public vs IAP)
 3. Credential rotation (ADMIN_SECRET, SECRET_KEY, GYM_PASSWORD) — see PATCH-01/02 in `AUDIT/12_RECOMMENDED_PATCHES.md`
 

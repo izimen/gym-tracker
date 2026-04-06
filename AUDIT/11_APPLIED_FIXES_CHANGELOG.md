@@ -62,16 +62,44 @@ Ponizej lista wdrozonych zmian z ETAPU 2.
 
 ---
 
+---
+
+## PRs #29-36 — Bugfixes & Hardening (2026-04-06)
+
+| # | Data | PR | Opis zmiany | Status |
+|---|------|----|-------------|--------|
+| 38 | 2026-04-06 | #29 | Fix 5 dashboard.js fetch() calls missing auth — replaced with authFetch | DONE |
+| 39 | 2026-04-06 | #30 | Fix sorted_hours not defined in _get_day_hour_combos — analytics 500 error | DONE |
+| 40 | 2026-04-06 | #31 | Cache bust dashboard.js?v=2.2, password maxlength 128 | DONE |
+| 41 | 2026-04-06 | #32 | CSP — restored unsafe-inline for onclick handlers | DONE |
+| 42 | 2026-04-06 | #33 | Export buttons show toast instead of logging out user | DONE |
+| 43 | 2026-04-06 | #34 | 6 bugs from automated audit: entries_cache race, duplicate logging, CSP unused CDNs removed, GYM_URL guard, dead code removed | DONE |
+| 44 | 2026-04-06 | #35 | First-hour stat inflation fix, lockout epoch timestamps, import-by-reference | DONE |
+| 45 | 2026-04-06 | #36 | Added stats-dashboard/ and node_modules/ to .gitignore | DONE |
+
+### Dodatkowe zmiany infrastrukturalne
+
+| # | Data | Opis | Status |
+|---|------|------|--------|
+| 46 | 2026-04-06 | Firestore composite indexes (user_id+date ASC i DESC) | DONE (GCP) |
+| 47 | 2026-04-06 | Firestore weekly backup (niedziela, retencja 14 dni) | DONE (GCP) |
+| 48 | 2026-04-06 | GitHub Secrets configured (GYM_URL, GYM_EMAIL, GYM_PASSWORD, ADMIN_SECRET) | DONE |
+| 49 | 2026-04-06 | stats-dashboard/ React prototype removed | DONE |
+| 50 | 2026-04-06 | Co-Authored-By removed from all commit history | DONE |
+
+---
+
 ## Podsumowanie Finalne
 
-- **Commitow:** 11
-- **Findings naprawionych:** 51/55 z roadmapy (93%)
+- **PRs:** 11 (etap 2) + 8 (PRs #29-36) = **19 total**
+- **Findings naprawionych:** 51/55 z roadmapy (93%) + 8 dodatkowych bugfixow
 - **Security findings:** 21/23 naprawionych (0 Critical, 0 High)
 - **LOC usuniete:** ~8,400 (dead files + inline JS)
 - **LOC zrefaktoryzowane:** app.py 1112→427, database.py -288 LOC dedup
 - **Nowe pliki:** extensions.py, routes/ (4 blueprinty), templates/base.html, tests/test_validation.py
 - **Testy:** 27 unit testow + CI smoke tests
 - **GCP:** 2 composite indexes, weekly backup schedule
+- **Weryfikacja:** 3 agenty — 16/16 endpoints PASS, 19/19 security headers PASS, 27/27 tests PASS
 
 ## Co Zostalo (Akceptowane / Nie Krytyczne)
 
