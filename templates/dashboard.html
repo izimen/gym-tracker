@@ -426,7 +426,7 @@
                 </div>
                 <div class="form-group">
                     <label>Hasło</label>
-                    <input type="password" id="loginPassword" maxlength="20" autocomplete="current-password">
+                    <input type="password" id="loginPassword" maxlength="128" autocomplete="current-password">
                 </div>
                 <div id="loginError" class="login-error"></div>
                 <button onclick="handleLogin()" class="btn-primary">Zaloguj się</button>
@@ -439,7 +439,7 @@
                 </div>
                 <div class="form-group">
                     <label>Hasło</label>
-                    <input type="password" id="registerPassword" maxlength="20" autocomplete="new-password">
+                    <input type="password" id="registerPassword" maxlength="128" autocomplete="new-password">
                 </div>
                 <div id="registerError" class="login-error"></div>
                 <button onclick="handleRegister()" class="btn-primary">Zarejestruj się</button>
@@ -451,5 +451,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="/static/js/dashboard.js" defer></script>
+    <script src="/static/js/dashboard.js?v=2.1" defer></script>
 {% endblock %}
