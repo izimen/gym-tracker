@@ -1334,6 +1334,7 @@ def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Op
     daily_hourly_entries = {}
 
     for date_str, hours_data in daily_data.items():
+        sorted_hours = sorted(hours_data.keys())
         daily_hourly_entries[date_str] = {}
 
         for i, hour in enumerate(sorted_hours):
