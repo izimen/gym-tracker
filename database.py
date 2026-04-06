@@ -18,6 +18,23 @@ from typing import List, Dict, Any, Optional
 # Configure logger
 logger = logging.getLogger(__name__)
 
+# Simple TTL cache for expensive analytics queries
+_cache = {}
+CACHE_TTL = 300  # 5 minutes
+
+
+def _cached(key: str, ttl: int = CACHE_TTL):
+    """Check if cached value exists and is fresh. Returns (hit, value)."""
+    entry = _cache.get(key)
+    if entry and time.time() - entry['ts'] < ttl:
+        return True, entry['value']
+    return False, None
+
+
+def _set_cache(key: str, value):
+    """Store a value in the TTL cache."""
+    _cache[key] = {'value': value, 'ts': time.time()}
+
 # Initialize Firestore client
 db = None
 
@@ -217,6 +234,45 @@ def create_user(username: str, password: str) -> dict:
     }
 
 
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION_SECONDS = 900  # 15 minutes
+
+
+def _get_login_attempts(username_lower: str) -> dict:
+    """Get login attempt tracking data for a user."""
+    db = get_db()
+    doc = db.collection('login_attempts').document(username_lower).get()
+    if doc.exists:
+        return doc.to_dict()
+    return {'attempts': 0, 'locked_until': None}
+
+
+def _record_failed_login(username_lower: str):
+    """Record a failed login attempt and lock if threshold exceeded."""
+    db = get_db()
+    tz = pytz.timezone('Europe/Warsaw')
+    now = datetime.now(tz)
+
+    ref = db.collection('login_attempts').document(username_lower)
+    doc = ref.get()
+    attempts = 1
+    if doc.exists:
+        attempts = doc.to_dict().get('attempts', 0) + 1
+
+    data = {'attempts': attempts, 'last_attempt': now.isoformat()}
+    if attempts >= MAX_LOGIN_ATTEMPTS:
+        locked_until = now + timedelta(seconds=LOCKOUT_DURATION_SECONDS)
+        data['locked_until'] = locked_until.isoformat()
+
+    ref.set(data)
+
+
+def _clear_login_attempts(username_lower: str):
+    """Clear login attempt tracking after successful login."""
+    db = get_db()
+    db.collection('login_attempts').document(username_lower).delete()
+
+
 def authenticate_user(username: str, password: str) -> dict:
     """
     Authenticate a user.
@@ -224,28 +280,47 @@ def authenticate_user(username: str, password: str) -> dict:
     """
     if not username or not password:
         return {'success': False, 'error': 'Username and password required'}
-    
+
     db = get_db()
     username_lower = username.lower()
-    
+    tz = pytz.timezone('Europe/Warsaw')
+    now = datetime.now(tz)
+
+    # Check account lockout (SEC-08)
+    attempt_data = _get_login_attempts(username_lower)
+    locked_until = attempt_data.get('locked_until')
+    if locked_until:
+        try:
+            lock_time = datetime.fromisoformat(locked_until)
+            if now < lock_time:
+                remaining = int((lock_time - now).total_seconds())
+                return {'success': False, 'error': f'Account locked. Try again in {remaining // 60 + 1} minutes.'}
+        except (ValueError, TypeError):
+            pass
+
     # Find user by username
     docs = db.collection('users').where('username_lower', '==', username_lower).limit(1).stream()
-    
+
     user_doc = None
     for doc in docs:
         user_doc = doc.to_dict()
         break
-    
+
     if not user_doc:
         # Dummy bcrypt check to prevent timing-based user enumeration (SEC-22)
         _dummy_hash = '$2b$12$N8nDf0hp1fhteQ0BFO3FruehnobfLHO9r55zh4nl/aYUtjrXaEExi'
         verify_password(password, _dummy_hash)
+        _record_failed_login(username_lower)
         return {'success': False, 'error': 'Invalid username or password'}
 
     # Verify password
     if not verify_password(password, user_doc.get('password_hash', '')):
+        _record_failed_login(username_lower)
         return {'success': False, 'error': 'Invalid username or password'}
-    
+
+    # Success — clear lockout tracking
+    _clear_login_attempts(username_lower)
+
     return {
         'success': True,
         'user_id': user_doc['user_id'],
@@ -921,7 +996,36 @@ def fetch_recent_hourly_data(days: int = 30) -> List[Dict[str, Any]]:
         return []
 
 
-def get_hourly_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None) -> Dict[int, float]:
+def _preprocess_daily_hourly(cached_data: List[Dict[str, Any]]) -> Dict[str, Dict[int, tuple]]:
+    """
+    Shared preprocessing: group cached_data by date, filter gym hours, skip incomplete days.
+    Returns: {date_str: {hour: (occupancy, weekday)}} — only complete days.
+    """
+    raw = {}
+    for data in cached_data:
+        date_str = data.get('date')
+        hour = data.get('hour')
+        weekday = data.get('weekday')
+        occupancy = data.get('occupancy', 0)
+
+        if date_str and hour is not None and weekday is not None and is_gym_open(weekday, hour):
+            if date_str not in raw:
+                raw[date_str] = {}
+            raw[date_str][hour] = (occupancy, weekday)
+
+    result = {}
+    for date_str, hours_data in raw.items():
+        if not hours_data:
+            continue
+        _, weekday = next(iter(hours_data.values()))
+        simple = {h: occ for h, (occ, _) in hours_data.items()}
+        if is_complete_day(simple, weekday):
+            result[date_str] = hours_data
+
+    return result
+
+
+def get_hourly_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> Dict[int, float]:
     """
     Calculate average ENTRIES per hour of the day.
     Entries = difference between consecutive hourly readings.
@@ -933,49 +1037,23 @@ def get_hourly_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any
     
     Returns: {6: 12.5, 7: 18.3, ..., 22: 8.2}
     """
-    if cached_data is None:
-        # Fallback to fetching data if not provided (old behavior)
-        cached_data = fetch_recent_hourly_data(days)
-    
-    # Group data by date, then by hour
-    # Structure: {date: {hour: (occupancy, weekday)}}
-    daily_hourly_data = {}
-    
-    for data in cached_data:
-        date_str = data.get('date')
-        hour = data.get('hour')
-        weekday = data.get('weekday')
-        occupancy = data.get('occupancy', 0)
-        
-        if date_str and hour is not None and weekday is not None:
-            # Filter hours based on gym opening times
-            if not is_gym_open(weekday, hour):
-                continue  # Skip hours outside gym hours
-            
-            if date_str not in daily_hourly_data:
-                daily_hourly_data[date_str] = {}
-            daily_hourly_data[date_str][hour] = (occupancy, weekday)
-    
+    if _preprocessed is not None:
+        daily_hourly_data = _preprocessed
+    else:
+        if cached_data is None:
+            cached_data = fetch_recent_hourly_data(days)
+        daily_hourly_data = _preprocess_daily_hourly(cached_data)
+
     # Calculate entries per hour (difference between consecutive readings)
     hourly_entries = {}
-    for h in range(6, 23):  # 6 AM to 10 PM (last slot 22:00-23:00)
+    for h in range(6, 23):
         hourly_entries[h] = []
-    
+
     for date_str, hours_data in daily_hourly_data.items():
         sorted_hours = sorted(hours_data.keys())
-        
-        # Get weekday from first hour's data
         if not sorted_hours:
             continue
-        _, weekday = hours_data[sorted_hours[0]]
-        
-        # Convert to simple {hour: occupancy} format for is_complete_day check
-        simple_hours_data = {h: occ for h, (occ, _) in hours_data.items()}
-        
-        # Skip incomplete days (holidays, early closures)
-        if not is_complete_day(simple_hours_data, weekday):
-            continue
-        
+
         for i, hour in enumerate(sorted_hours):
             occupancy, weekday = hours_data[hour]
             
@@ -1142,10 +1220,14 @@ def get_hourly_stats() -> dict:
     Get complete hourly statistics for the chart.
     Returns averages, best hours, and data quality info.
     """
+    hit, val = _cached('hourly_stats')
+    if hit:
+        return val
+
     db = get_db()
     tz = pytz.timezone('Europe/Warsaw')
     now = datetime.now(tz)
-    
+
     cached_data = fetch_recent_hourly_data(30)
     
     averages = get_hourly_averages(cached_data=cached_data)
@@ -1157,13 +1239,15 @@ def get_hourly_stats() -> dict:
     # Estimate days with data
     days_with_data = data_points // 17 if data_points > 0 else 0  # ~17 hours per day (6-22)
     
-    return {
+    result = {
         'hourly_averages': averages,
         'best_hours': best_hours,
         'data_points': data_points,
         'days_with_data': days_with_data,
         'current_hour': now.hour
     }
+    _set_cache('hourly_stats', result)
+    return result
 
 
 # =============================================================================
@@ -1173,58 +1257,28 @@ def get_hourly_stats() -> dict:
 WEEKDAY_NAMES_SHORT = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd']
 
 
-def get_daily_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None) -> Dict[str, float]:
+def get_daily_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> Dict[str, float]:
     """
     Calculate average occupancy for each day of the week.
     Uses data from the last N days.
     Excludes incomplete days (holidays, early closures).
-    
-    Gym hours:
-    - Weekdays (Mon-Fri): 6:00 - 23:00
-    - Weekends (Sat-Sun): 8:00 - 20:00
-    
+
     Returns: {'Pon': 45.2, 'Wt': 52.1, ..., 'Nd': 28.5}
     """
-    if cached_data is None:
-        cached_data = fetch_recent_hourly_data(days)
-    
-    # First, group all data by date: {date: {hour: (occupancy, weekday)}}
-    all_daily_data = {}
-    
-    for data in cached_data:
-        weekday = data.get('weekday')
-        date_str = data.get('date')
-        hour = data.get('hour')
-        occupancy = data.get('occupancy', 0)
-        
-        if weekday is not None and date_str and hour is not None:
-            # Filter hours based on gym opening times
-            if not is_gym_open(weekday, hour):
-                continue
-            
-            if date_str not in all_daily_data:
-                all_daily_data[date_str] = {}
-            all_daily_data[date_str][hour] = (occupancy, weekday)
-    
-    # Now filter for complete days and calculate max per day
-    daily_data = {i: {} for i in range(7)}  # {weekday: {date: max_occupancy}}
-    
+    if _preprocessed is not None:
+        all_daily_data = _preprocessed
+    else:
+        if cached_data is None:
+            cached_data = fetch_recent_hourly_data(days)
+        all_daily_data = _preprocess_daily_hourly(cached_data)
+
+    # Calculate max per day, grouped by weekday
+    daily_data = {i: {} for i in range(7)}
+
     for date_str, hours_data in all_daily_data.items():
         if not hours_data:
             continue
-        
-        # Get weekday from first entry
-        first_hour = next(iter(hours_data.keys()))
-        _, weekday = hours_data[first_hour]
-        
-        # Convert to simple format for is_complete_day check
-        simple_hours_data = {h: occ for h, (occ, _) in hours_data.items()}
-        
-        # Skip incomplete days
-        if not is_complete_day(simple_hours_data, weekday):
-            continue
-        
-        # Calculate max occupancy for this complete day
+        _, weekday = next(iter(hours_data.values()))
         max_occupancy = max(occ for occ, _ in hours_data.values())
         daily_data[weekday][date_str] = max_occupancy
     
@@ -1263,43 +1317,23 @@ def get_week_ago_same_hour() -> Optional[dict]:
     return None
 
 
-def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> List[Dict[str, Any]]:
     """
     Get the N best or worst day+hour combinations by average entries.
     Uses sliding 2-hour windows (6-8, 7-9, 8-10, ..., 21-23) for analysis.
     ascending=True returns lowest averages (best times), False returns highest (worst times).
     """
-    if cached_data is None:
-        cached_data = fetch_recent_hourly_data(30)
+    if _preprocessed is not None:
+        daily_data = _preprocessed
+    else:
+        if cached_data is None:
+            cached_data = fetch_recent_hourly_data(30)
+        daily_data = _preprocess_daily_hourly(cached_data)
 
-    # Group data by date
-    daily_data = {}
-
-    for data in cached_data:
-        date_str = data.get('date')
-        hour = data.get('hour')
-        weekday = data.get('weekday')
-        occupancy = data.get('occupancy', 0)
-
-        if date_str and hour is not None and weekday is not None and is_gym_open(weekday, hour):
-            if date_str not in daily_data:
-                daily_data[date_str] = {}
-            daily_data[date_str][hour] = (occupancy, weekday)
-
-    # Calculate entries per hour for each day (only complete days)
+    # Calculate entries per hour for each day (already filtered to complete days)
     daily_hourly_entries = {}
 
     for date_str, hours_data in daily_data.items():
-        sorted_hours = sorted(hours_data.keys())
-        if not sorted_hours:
-            continue
-
-        _, weekday = hours_data[sorted_hours[0]]
-        simple_hours_data = {h: occ for h, (occ, _) in hours_data.items()}
-
-        if not is_complete_day(simple_hours_data, weekday):
-            continue
-
         daily_hourly_entries[date_str] = {}
 
         for i, hour in enumerate(sorted_hours):
@@ -1363,14 +1397,14 @@ def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Op
     return averages[:top_n]
 
 
-def get_best_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+def get_best_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> List[Dict[str, Any]]:
     """Get the N best day+hour combinations with lowest average entries."""
-    return _get_day_hour_combos(top_n, ascending=True, cached_data=cached_data)
+    return _get_day_hour_combos(top_n, ascending=True, cached_data=cached_data, _preprocessed=_preprocessed)
 
 
-def get_worst_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+def get_worst_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> List[Dict[str, Any]]:
     """Get the N worst day+hour combinations with highest average entries."""
-    return _get_day_hour_combos(top_n, ascending=False, cached_data=cached_data)
+    return _get_day_hour_combos(top_n, ascending=False, cached_data=cached_data, _preprocessed=_preprocessed)
 
 
 
@@ -1450,37 +1484,38 @@ def get_weekday_hour_average(weekday: int, hour: int, days: int = 30, cached_dat
 def get_extended_occupancy_stats() -> Dict[str, Any]:
     """
     Get all extended occupancy statistics for the dashboard.
-    OPTIMIZED: Fetches data once and passes it to all sub-functions.
+    OPTIMIZED: Cached 5min, fetches once, preprocesses once, passes to all sub-functions.
     """
+    hit, val = _cached('extended_stats')
+    if hit:
+        return val
+
     tz = pytz.timezone('Europe/Warsaw')
     now = datetime.now(tz)
-    
-    # 1. Fetch data ONCE for all functions
-    # (30 days covers all needs for averages and best/worst lists)
+
+    # 1. Fetch data ONCE
     cached_data = fetch_recent_hourly_data(30)
-    
-    # 2. Pass cached data to all functions to avoid N+1 queries
+
+    # 2. Preprocess ONCE — group by date, filter gym hours, skip incomplete days
+    preprocessed = _preprocess_daily_hourly(cached_data)
+
+    # 3. Pass preprocessed data to all functions (no re-grouping or re-filtering)
     today_hour_avg = get_weekday_hour_average(now.weekday(), now.hour, cached_data=cached_data)
-    
-    return {
-        # Current info
+
+    result = {
         'current_weekday': WEEKDAY_NAMES_SHORT[now.weekday()],
         'current_hour': now.hour,
-        
-        # Averages
-        'daily_averages': get_daily_averages(cached_data=cached_data),
-        'hourly_averages': get_hourly_averages(cached_data=cached_data),
-        'current_hour_avg': get_current_hour_average(cached_data=cached_data),  # All days, this hour
-        'today_avg': get_today_average(cached_data=cached_data),  # This weekday, MAX daily
-        'today_hour_avg': today_hour_avg,  # This weekday, this hour
-        
-        # Best/Worst combos
-        'best_times': get_best_day_hour_combos(3, cached_data=cached_data),
-        'worst_times': get_worst_day_hour_combos(3, cached_data=cached_data),
-        
-        # Current weekday average for display
+        'daily_averages': get_daily_averages(_preprocessed=preprocessed),
+        'hourly_averages': get_hourly_averages(_preprocessed=preprocessed),
+        'current_hour_avg': get_current_hour_average(cached_data=cached_data),
+        'today_avg': get_today_average(cached_data=cached_data),
+        'today_hour_avg': today_hour_avg,
+        'best_times': get_best_day_hour_combos(3, _preprocessed=preprocessed),
+        'worst_times': get_worst_day_hour_combos(3, _preprocessed=preprocessed),
         'weekday_name_full': WEEKDAY_NAMES_PL[now.weekday()],
     }
+    _set_cache('extended_stats', result)
+    return result
 
 
 # =============================================================================
