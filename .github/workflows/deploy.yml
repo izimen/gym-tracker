@@ -25,7 +25,7 @@ jobs:
 
       - name: Run smoke tests
         run: |
-          pip install bcrypt pytz pytest
+          pip install bcrypt pytz pytest google-cloud-firestore pydantic
           python -m pytest tests/ -v
 
       - name: Google Auth
