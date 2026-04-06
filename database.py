@@ -56,7 +56,7 @@ def get_db():
 # Example: (6, 22) means gym opens at 6:00 and last slot is 22:00-23:00
 
 GYM_HOURS = {
-    'weekday': (6, 22),  # Monday-Friday: 6:00 - 23:00
+    'weekday': (6, 23),  # Monday-Friday: 6:00 - 24:00 (last slot 23:00-00:00)
     'weekend': (8, 19),  # Saturday-Sunday: 8:00 - 20:00
 }
 
