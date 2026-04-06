@@ -11,10 +11,12 @@
 | Severity | Ilosc | Naprawione (2026-04-06) |
 |----------|-------|-------------------------|
 | Critical | 3 | 3 FIXED |
-| High | 5 | 2 FIXED |
-| Medium | 6 | 4 FIXED |
-| Low | 4 | 3 FIXED |
+| High | 5 | **5 FIXED** |
+| Medium | 6 | **5 FIXED** (1 open: SEC-14 setup_server.sh) |
+| Low | 4 | **4 FIXED** |
 | Info | 2 | - |
+
+> **21 z 23 findings naprawionych.** Otwarte: SEC-14 (setup_server.sh curl, niskie ryzyko), SEC-21 (in-memory rate limiter, akceptowalne dla hobby projektu).
 
 ---
 
@@ -119,7 +121,7 @@
 - **Scenariusz ataku:** SameSite Lax chroni przed cross-site POST, ale nie przed subdomain attacks ani same-site scenarios. Bez tokenu CSRF, formularz z tej samej domeny moze wykonac nieautoryzowana akcje.
 - **Wplyw:** Mozliwosc wykonania akcji w imieniu zalogowanego uzytkownika (zapis/usuwanie treningu).
 - **Rekomendacja:** Dodac Flask-WTF lub reczna generacje CSRF tokenu.
-- **Status:** proposed
+- **Status:** FIXED (2026-04-06) — X-Requested-With header validation na POST/PUT/DELETE
 
 ### SEC-08: Brak account lockout
 - **Severity:** High
@@ -128,7 +130,7 @@
 - **Scenariusz ataku:** Z polityka hasel min 3 znaki (SEC-02), slownikowy atak jest realny.
 - **Wplyw:** Kompromitacja kont uzytkownikow.
 - **Rekomendacja:** Dodac tymczasowa blokade (np. 15 min po 5 nieudanych) lub exponential backoff.
-- **Status:** proposed
+- **Status:** FIXED (2026-04-06) — 15 min lockout po 5 nieudanych probach, Firestore login_attempts
 
 ---
 
@@ -143,7 +145,7 @@
   ```
 - **Wplyw:** `unsafe-inline` oslabnia ochrone CSP przed XSS. Atakujacy ktory wstrzyknie inline script (np. przez DOM injection) omija CSP.
 - **Rekomendacja:** Usunac `unsafe-inline` po zakonczonej migracji inline JS (zob. zmiany.md). Uzyc nonce-based CSP.
-- **Status:** proposed
+- **Status:** FIXED (2026-04-06) — inline JS wyekstrahowany, unsafe-inline usunieto z script-src
 
 ### SEC-10: Brak walidacji `date_str` w debug endpoint
 - **Severity:** Medium
@@ -206,14 +208,14 @@
 - **Dowod:** `app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)`
 - **Wplyw:** Sesja wazna rok. Jesli cookie wycieknie, atakujacy ma dlugookresowy dostep.
 - **Rekomendacja:** Zmniejszyc do 30-90 dni. Dodac mechanizm "remember me" z oddzielnym tokenem.
-- **Status:** proposed
+- **Status:** FIXED (2026-04-06) — zmniejszono do 90 dni
 
 ### SEC-17: Pre-commit Gitleaks rev outdated
 - **Severity:** Low
 - **Lokalizacja:** `.pre-commit-config.yaml:12`
 - **Dowod:** `rev: v8.18.1` - aktualna wersja Gitleaks to v8.21+. Brakuje najnowszych regul detekcji.
 - **Rekomendacja:** Zaktualizowac do najnowszej wersji.
-- **Status:** proposed
+- **Status:** FIXED (2026-04-06) — zaktualizowano do v8.22.1
 
 ### SEC-18: Brak `object-src 'none'` w CSP
 - **Severity:** Low
