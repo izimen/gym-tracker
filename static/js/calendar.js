@@ -1,4 +1,21 @@
 
+function showToast(message, type = 'success') {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+        document.body.appendChild(container);
+    }
+    const colors = { success: '#10b981', error: '#ef4444', info: '#7c3aed' };
+    const toast = document.createElement('div');
+    toast.style.cssText = `background:${colors[type] || colors.info};color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-family:Inter,sans-serif;pointer-events:auto;opacity:0;transform:translateX(40px);transition:all 0.3s ease;box-shadow:0 4px 12px rgba(0,0,0,0.3);`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; });
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(40px)'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
 // Safety wrapper for DOMPurify
 function safeSanitize(html) {
     if (typeof DOMPurify !== 'undefined') {
@@ -224,7 +241,7 @@ function closeModal() {
 
 async function saveWorkout() {
     if (!selectedDate || selectedParts.length === 0) {
-        alert('Wybierz przynajmniej jedną partię ciała!');
+        showToast('Wybierz przynajmniej jedną partię ciała!', 'error');
         return;
     }
 
@@ -246,11 +263,11 @@ async function saveWorkout() {
             renderCalendar();
         } else {
             const data = await response.json();
-            alert('Błąd: ' + (data.error || 'Nieznany błąd'));
+            showToast(data.error || 'Nieznany błąd', 'error');
         }
     } catch (error) {
         console.error('Error saving workout:', error);
-        alert('Błąd połączenia');
+        showToast('Błąd połączenia', 'error');
     }
 }
 
@@ -510,7 +527,7 @@ async function downloadBackup() {
         downloadJSON(data, 'gym_tracker_backup.json');
     } catch (error) {
         console.error('Error downloading backup:', error);
-        alert('Błąd pobierania backupu');
+        showToast('Błąd pobierania backupu', 'error');
     }
 }
 
@@ -521,7 +538,7 @@ async function downloadWorkouts() {
         downloadJSON(data, 'workouts_backup.json');
     } catch (error) {
         console.error('Error downloading workouts:', error);
-        alert('Błąd pobierania treningów');
+        showToast('Błąd pobierania treningów', 'error');
     }
 }
 
