@@ -2,13 +2,30 @@
 // UTILS
 // ============================================
 
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    const colors = { success: '#10b981', error: '#ef4444', info: '#7c3aed' };
+    toast.style.cssText = `background:${colors[type] || colors.info};color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-family:Inter,sans-serif;pointer-events:auto;opacity:0;transform:translateX(40px);transition:all 0.3s ease;box-shadow:0 4px 12px rgba(0,0,0,0.3);`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(0)'; });
+    setTimeout(() => {
+        toast.style.opacity = '0'; toast.style.transform = 'translateX(40px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 // Safety wrapper for DOMPurify
 function safeSanitize(html) {
     if (typeof DOMPurify !== 'undefined') {
         return DOMPurify.sanitize(html);
     }
-    console.warn('DOMPurify not loaded, falling back to raw HTML');
-    return html;
+    console.warn('DOMPurify not loaded, stripping HTML tags');
+    const el = document.createElement('div');
+    el.textContent = html;
+    return el.innerHTML;
 }
 
 // ============================================
@@ -63,6 +80,8 @@ let currentUser = null;
 // Wrapper for fetch that handles 401 (session expired) gracefully
 async function authFetch(url, options = {}) {
     if (!options.credentials) options.credentials = 'same-origin';
+    if (!options.headers) options.headers = {};
+    options.headers['X-Requested-With'] = 'XMLHttpRequest';
     const res = await fetch(url, options);
     if (res.status === 401) {
         clearUser();
@@ -127,7 +146,7 @@ async function handleLogin() {
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
             body: JSON.stringify({ username, password })
         });
@@ -160,7 +179,7 @@ async function handleRegister() {
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
             body: JSON.stringify({ username, password })
         });
@@ -183,7 +202,7 @@ async function handleRegister() {
 async function logout() {
     if (confirm('Czy na pewno chcesz się wylogować?')) {
         try {
-            await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         } catch (e) { /* ignore */ }
         clearUser();
         location.reload();
@@ -649,7 +668,7 @@ function closeModal() {
 
 async function saveWorkout() {
     if (!selectedDate || selectedParts.length === 0) {
-        alert('Wybierz przynajmniej jedną partię ciała!');
+        showToast('Wybierz przynajmniej jedną partię ciała!', 'error');
         return;
     }
 
@@ -678,16 +697,17 @@ async function saveWorkout() {
 
         if (response.ok) {
             closeModal();
+            showToast('Trening zapisany!', 'success');
             await fetchMonthWorkouts();
             await fetchDashboard();
             renderCalendar();
         } else {
             const data = await response.json();
-            alert('Błąd: ' + (data.error || 'Nieznany błąd'));
+            showToast(data.error || 'Nieznany błąd', 'error');
         }
     } catch (error) {
         console.error('Error saving workout:', error);
-        alert('Błąd połączenia');
+        showToast('Błąd połączenia', 'error');
     }
 }
 
@@ -702,12 +722,14 @@ async function deleteWorkout() {
 
         if (response.ok) {
             closeModal();
+            showToast('Trening usunięty', 'info');
             await fetchMonthWorkouts();
             await fetchDashboard();
             renderCalendar();
         }
     } catch (error) {
         console.error('Error deleting workout:', error);
+        showToast('Błąd usuwania treningu', 'error');
     }
 }
 
@@ -1280,7 +1302,7 @@ async function downloadBackup() {
         downloadJSON(data, 'gym_tracker_backup.json');
     } catch (error) {
         console.error('Error downloading backup:', error);
-        alert('Błąd pobierania backupu');
+        showToast('Błąd pobierania backupu', 'error');
     }
 }
 
@@ -1291,7 +1313,7 @@ async function downloadWorkouts() {
         downloadJSON(data, 'workouts_backup.json');
     } catch (error) {
         console.error('Error downloading workouts:', error);
-        alert('Błąd pobierania treningów');
+        showToast('Błąd pobierania treningów', 'error');
     }
 }
 

@@ -3,8 +3,10 @@ function safeSanitize(html) {
     if (typeof DOMPurify !== 'undefined') {
         return DOMPurify.sanitize(html);
     }
-    console.warn('DOMPurify not loaded, falling back to raw HTML');
-    return html;
+    console.warn('DOMPurify not loaded, stripping HTML tags');
+    const el = document.createElement('div');
+    el.textContent = html;
+    return el.innerHTML;
 }
 
 let refreshCooldown = false;
@@ -250,4 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchData, 30000);
     setInterval(fetchStats, 60000);
     setInterval(fetchWorkoutStats, 120000);
+    setInterval(fetchBestHours, 300000);
+
+    // Clean up old service workers
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(r => r.unregister());
+        });
+    }
 });
