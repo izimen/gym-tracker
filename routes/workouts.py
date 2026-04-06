@@ -5,7 +5,7 @@ from pydantic import BaseModel, field_validator
 from typing import Optional
 import re
 import database
-from extensions import FIRESTORE_ENABLED, limiter, require_login
+import extensions
 
 workouts_bp = Blueprint('workouts', __name__)
 
@@ -42,13 +42,13 @@ def calendar():
 
 
 @workouts_bp.route('/api/workout', methods=['POST'])
-@limiter.limit("60 per minute")
+@extensions.limiter.limit("60 per minute")
 def save_workout():
     """Save a workout for a date"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -70,13 +70,13 @@ def save_workout():
 
 
 @workouts_bp.route('/api/workout/<date_str>', methods=['GET'])
-@limiter.limit("60 per minute")
+@extensions.limiter.limit("60 per minute")
 def get_workout(date_str):
     """Get workout for a specific date"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -89,13 +89,13 @@ def get_workout(date_str):
 
 
 @workouts_bp.route('/api/workout/<date_str>', methods=['DELETE'])
-@limiter.limit("60 per minute")
+@extensions.limiter.limit("60 per minute")
 def delete_workout(date_str):
     """Delete workout for a specific date"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -108,16 +108,16 @@ def delete_workout(date_str):
 
 
 @workouts_bp.route('/api/workouts/month/<int:year>/<int:month>')
-@limiter.limit("30 per minute")
+@extensions.limiter.limit("30 per minute")
 def get_month_workouts(year, month):
     """Get all workouts for a month"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     if not (2020 <= year <= 2100) or not (1 <= month <= 12):
         return jsonify({'error': 'Invalid year or month'}), 400
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -135,13 +135,13 @@ def get_month_workouts(year, month):
 
 
 @workouts_bp.route('/api/workouts/dashboard')
-@limiter.limit("30 per minute")
+@extensions.limiter.limit("30 per minute")
 def get_workout_dashboard():
     """Get all workout stats for the dashboard"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available', 'firestore_enabled': False}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -155,13 +155,13 @@ def get_workout_dashboard():
 
 
 @workouts_bp.route('/api/strength')
-@limiter.limit("30 per minute")
+@extensions.limiter.limit("30 per minute")
 def get_strength_stats():
     """Get strength statistics: PRs, volume, etc."""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -174,16 +174,16 @@ def get_strength_stats():
 
 
 @workouts_bp.route('/api/progression/<part>')
-@limiter.limit("30 per minute")
+@extensions.limiter.limit("30 per minute")
 def get_progression(part):
     """Get weight progression for a specific body part"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     if part not in database.BODY_PARTS:
         return jsonify({'error': f'Invalid body part: {part}'}), 400
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 

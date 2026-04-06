@@ -2,16 +2,16 @@
 
 from flask import Blueprint, jsonify, request, session, current_app
 import database
-from extensions import FIRESTORE_ENABLED, limiter, get_current_user_id
+import extensions
 
 auth_bp = Blueprint('auth', __name__)
 
 
 @auth_bp.route('/api/auth/register', methods=['POST'])
-@limiter.limit("5 per minute")
+@extensions.limiter.limit("5 per minute")
 def register_user():
     """Register a new user"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'success': False, 'error': 'Firestore not available'}), 503
 
     data = request.get_json()
@@ -33,10 +33,10 @@ def register_user():
 
 
 @auth_bp.route('/api/auth/login', methods=['POST'])
-@limiter.limit("10 per minute")
+@extensions.limiter.limit("10 per minute")
 def login_user():
     """Login with username and password"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'success': False, 'error': 'Firestore not available'}), 503
 
     data = request.get_json()
@@ -67,7 +67,7 @@ def logout_user():
 @auth_bp.route('/api/auth/me')
 def auth_me():
     """Check if current session is valid. Returns user info or 401."""
-    uid = get_current_user_id()
+    uid = extensions.get_current_user_id()
     if uid:
         return jsonify({'user_id': uid, 'username': session.get('username', '')})
     return jsonify({'error': 'Not authenticated'}), 401
