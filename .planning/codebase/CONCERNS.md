@@ -5,18 +5,15 @@
 
 ---
 
-> **ETAP 2 Update (2026-04-06):** The following concerns have been FIXED:
-> - **C-01** (.dockerignore) — FIXED
-> - **C-02** (password policy) — FIXED (min 8, max 128, complexity)
-> - **C-03** (debug endpoint auth) — FIXED (admin secret required)
-> - **H-01** (user enumeration) — FIXED (generic message + dummy bcrypt)
-> - **H-02** (admin secret in query) — FIXED (header only)
-> - **H-03** (DOMPurify fallback) — FIXED (textContent escape)
-> - **H-07** (GET for destructive op) — FIXED (changed to DELETE)
-> - **M-01** (missing rate limits) — FIXED (15 endpoints)
-> - **M-06** (exception messages) — FIXED (generic errors + server-side logging)
+> **ETAP 2 ZAKONCZONY (2026-04-06):** Practically all concerns resolved:
 >
-> **Still open:** H-04 (CSRF), H-05 (account lockout), H-06 (thread safety), M-02 (Firestore queries), M-03 (CSP unsafe-inline), M-05 (CI/CD env vars), all Low/TD items.
+> **Critical:** C-01 FIXED, C-02 FIXED, C-03 FIXED (all 3/3)
+> **High:** H-01 FIXED, H-02 FIXED, H-03 FIXED, H-04 FIXED (CSRF), H-05 FIXED (lockout), H-06 FIXED (thread safety), H-07 FIXED (all 7/7)
+> **Medium:** M-01 FIXED (rate limits), M-02 FIXED (Firestore queries + composite indexes), M-03 FIXED (CSP strict), M-04 partial (some innerHTML remain), M-05 FIXED (CI env vars), M-06 FIXED (error masking)
+> **Low:** L-01 open (gunicorn timeout), L-02 accepted (in-memory limiter), L-03 accepted (daemon thread), L-04 open (dep pinning), L-05 accepted (export scope)
+> **Tech Debt:** TD-01 FIXED (base template), TD-02 FIXED (Blueprints), TD-03 FIXED (27 tests), TD-04 FIXED (Firestore queries)
+>
+> **Still open (accepted):** L-01, L-02, L-03, L-04, L-05 — all Low priority, acceptable for project scale.
 
 ---
 

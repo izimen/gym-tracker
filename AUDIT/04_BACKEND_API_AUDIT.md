@@ -80,6 +80,7 @@
   ```
 - **Wplyw:** Przy 1000 uzytkownikach z 100 treningami kazdy = 100k dokumentow ladowanych do pamieci. Kosztowne ($$$) operacje Firestore.
 - **Rekomendacja:** Dodac `.where('user_id', '==', user_id)` do query Firestore.
+- **Status:** FIXED (2026-04-06) — `.where('user_id')` dodane + composite index w Firestore
 - **Effort:** Low | **Impact:** High
 
 ### API-04: `get_month_workouts()` laduje wszystkie workouty z miesiaca
@@ -96,6 +97,7 @@
 - **Opis:** `db.collection('workouts').order_by('date').stream()` - laduje wszystkie workouty, sortuje i filtruje w Pythonie.
 - **Wplyw:** To samo co API-03 ale z dodatkowym kosztem sortowania.
 - **Rekomendacja:** Dodac `.where('user_id', '==', user_id)` przed `.order_by()`.
+- **Status:** FIXED (2026-04-06)
 - **Effort:** Low | **Impact:** Medium
 
 ### API-06: Brak paginacji na listach danych
