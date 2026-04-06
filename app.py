@@ -396,7 +396,7 @@ def add_security_headers(response):
 
     csp = (
         "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "script-src 'self' 'unsafe-hashes' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "img-src 'self' data: https://fav.farm; "
         "font-src 'self' https://fonts.gstatic.com; "
