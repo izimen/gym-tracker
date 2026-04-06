@@ -33,10 +33,10 @@ Zmiany o wysokim impact przy niskim nakladzie pracy.
 | 7 | Wzmocnic politykę hasel (min 8 znakow) | SEC-02 | 30 min | Critical | DONE |
 | 8 | Usunac dead files (dashboard_old.html, response.html, .idea/) | ARCH | 10 min | Low | DONE |
 | 9 | Usunac design-showcase/ folder | ARCH | 5 min | Low | DONE |
-| 10 | Dodac Firestore query do health check | OPS-04 | 15 min | Medium | TODO |
-| 11 | Optymalizowac get_personal_records() - dodac where user_id | API-03 | 15 min | High | TODO |
-| 12 | Optymalizowac get_progression() - dodac where user_id | API-05 | 15 min | Medium | TODO |
-| 13 | Zaktualizowac .pre-commit Gitleaks version | SEC-17 | 5 min | Low | TODO |
+| 10 | Dodac Firestore query do health check | OPS-04 | 15 min | Medium | DONE |
+| 11 | Optymalizowac get_personal_records() - dodac where user_id | API-03 | 15 min | High | DONE |
+| 12 | Optymalizowac get_progression() - dodac where user_id | API-05 | 15 min | Medium | DONE |
+| 13 | Zaktualizowac .pre-commit Gitleaks version | SEC-17 | 5 min | Low | DONE |
 | 14 | Dodac `object-src 'none'` do CSP | SEC-18 | 5 min | Low | DONE |
 | 15 | Dodac rate limit do export endpointow | SEC-11 | 10 min | Medium | DONE |
 
@@ -50,24 +50,23 @@ Zmiany o wysokim impact przy niskim nakladzie pracy.
 
 Zmiany wymagajace wiecej planowania.
 
-| # | Zadanie | ID | Effort | Impact |
-|---|---------|-----|--------|--------|
-| 16 | Refaktor duplikacji best/worst combos w database.py | ARCH-01 | 1h | Medium |
-| 17 | Naprawic N+1 queries w get_weekly_workout_history | PERF-01 | 1h | High |
-| 18 | Pre-process danych w get_extended_occupancy_stats | PERF-02 | 2h | High |
-| 19 | Dodac unit testy: walidacja, is_complete_day | QA-01 | 2h | High |
-| 20 | Dodac smoke testy do CI/CD | QA-05 | 1h | High |
-| 21 | Zastapic print() loggerem w app.py | OPS-06 | 1h | Medium |
-| 22 | Dodac brakujace env vars do deploy workflow | OPS-02 | 30 min | High |
-| 23 | ~~Dodac walidacje year/month/date w URL paths~~ | API-08/SEC-10 | 30 min | Medium | DONE (date_str w debug) |
-| 24 | Poprawic thread safety entries_cache | API-01 | 30 min | High |
-| 25 | Dodac toast notifications po save/delete workout | UX-01 | 1h | High |
-| 26 | Przetlumaczyc bledy walidacji na polski | UX-02 | 30 min | Medium |
-| 27 | Usunac `user-scalable=no` z viewportow | A11Y-08 | 5 min | Low |
-| 28 | Dodac aria-labels na przyciskach nawigacji | A11Y-02 | 30 min | Medium |
+| # | Zadanie | ID | Effort | Impact | Status |
+|---|---------|-----|--------|--------|--------|
+| 16 | Refaktor duplikacji best/worst combos w database.py | ARCH-01 | 1h | Medium | DONE |
+| 17 | Naprawic N+1 queries w get_weekly_workout_history | PERF-01 | 1h | High | DONE |
+| 18 | Pre-process danych w get_extended_occupancy_stats | PERF-02 | 2h | High | DONE |
+| 19 | Dodac unit testy: walidacja, is_complete_day | QA-01 | 2h | High | DONE (27 testow) |
+| 20 | Dodac smoke testy do CI/CD | QA-05 | 1h | High | TODO |
+| 21 | Zastapic print() loggerem w app.py | OPS-06 | 1h | Medium | DONE |
+| 22 | Dodac brakujace env vars do deploy workflow | OPS-02 | 30 min | High | TODO |
+| 23 | Dodac walidacje year/month/date w URL paths | API-08/SEC-10 | 30 min | Medium | DONE |
+| 24 | Poprawic thread safety entries_cache | API-01 | 30 min | High | DONE |
+| 25 | Dodac toast notifications po save/delete workout | UX-01 | 1h | High | TODO |
+| 26 | Przetlumaczyc bledy walidacji na polski | UX-02 | 30 min | Medium | TODO |
+| 27 | Usunac `user-scalable=no` z viewportow | A11Y-08 | 5 min | Low | DONE |
+| 28 | Dodac aria-labels na przyciskach nawigacji | A11Y-02 | 30 min | Medium | TODO |
 
-**Laczny effort:** ~12h  
-**Laczny impact:** 6 High + 7 Medium
+**Wdrozono (04-06):** 16-19, 21, 23, 24, 27 (8 z 13) | **Pozostalo:** 20, 22, 25, 26, 28
 
 ---
 
@@ -75,23 +74,22 @@ Zmiany wymagajace wiecej planowania.
 
 Wieksze zmiany architektoniczne.
 
-| # | Zadanie | ID | Effort | Impact |
-|---|---------|-----|--------|--------|
-| 29 | Rozdzielic app.py na Flask Blueprints | ARCH-02 | 4h | Medium |
-| 30 | Stworzyc base template (Jinja2 inheritance) | FE-01 | 3h | High |
-| 31 | Dokonczyc migracje inline JS z index.html | FE-02 | 2h | High |
-| 32 | Ujednolicic CSS variables | FE-03 | 1h | Medium |
-| 33 | Przeniesc inline styles z dashboard.html do CSS | FE-04 | 2h | Medium |
-| 34 | Dodac server-side cache dla analytics (5 min TTL) | PERF-03 | 2h | Medium |
-| 35 | Dodac schema validation (Pydantic) dla POST endpoints | ARCH-07 | 3h | Medium |
-| 36 | Dodac CSRF token | SEC-07 | 2h | High |
-| 37 | Dodac account lockout po 5 nieudanych logowaniach | SEC-08 | 2h | High |
-| 38 | Dodac composite index (user_id + date) w Firestore | API-04 | 1h | Medium |
-| 39 | Dodac Firestore automated backups | OPS-08 | 1h | Medium |
-| 40 | Usunac unsafe-inline z CSP po migracji JS | SEC-09 | 30 min | Medium |
+| # | Zadanie | ID | Effort | Impact | Status |
+|---|---------|-----|--------|--------|--------|
+| 29 | Rozdzielic app.py na Flask Blueprints | ARCH-02 | 4h | Medium | TODO |
+| 30 | Stworzyc base template (Jinja2 inheritance) | FE-01 | 3h | High | TODO |
+| 31 | Dokonczyc migracje inline JS z index.html | FE-02 | 2h | High | DONE |
+| 32 | Ujednolicic CSS variables | FE-03 | 1h | Medium | TODO |
+| 33 | Przeniesc inline styles z dashboard.html do CSS | FE-04 | 2h | Medium | TODO |
+| 34 | Dodac server-side cache dla analytics (5 min TTL) | PERF-03 | 2h | Medium | DONE |
+| 35 | Dodac schema validation (Pydantic) dla POST endpoints | ARCH-07 | 3h | Medium | TODO |
+| 36 | Dodac CSRF token | SEC-07 | 2h | High | DONE |
+| 37 | Dodac account lockout po 5 nieudanych logowaniach | SEC-08 | 2h | High | DONE |
+| 38 | Dodac composite index (user_id + date) w Firestore | API-04 | 1h | Medium | TODO |
+| 39 | Dodac Firestore automated backups | OPS-08 | 1h | Medium | TODO |
+| 40 | Usunac unsafe-inline z CSP po migracji JS | SEC-09 | 30 min | Medium | DONE |
 
-**Laczny effort:** ~24h  
-**Laczny impact:** 4 High + 8 Medium
+**Wdrozono (04-06):** 31, 34, 36, 37, 40 (5 z 12) | **Pozostalo:** 29, 30, 32, 33, 35, 38, 39
 
 ---
 
@@ -121,13 +119,13 @@ Ulepszenia ktore poprawia jakosc ale nie sa krytyczne.
 
 ## Metryki Sukcesu Po Wdrozeniu
 
-| Metryka | Przed | Po ETAPIE 2 (04-06) | Cel |
-|---------|-------|----------------------|-----|
-| Security findings (Critical) | 3 | **0** | 0 |
-| Security findings (High) | 5 | **3** | 0 |
-| Test coverage | ~2% | ~2% | >40% |
-| Dead files | 12+ | **0** | 0 |
-| Firestore queries per request (analytics) | ~12 | ~12 | ~2 |
-| CSP unsafe-inline | Tak | Tak | Nie |
-| Account lockout | Brak | Brak | Po 5 probach |
-| Password min length | 3 | **8** | 8 |
+| Metryka | Przed | Po ETAPIE 2 (04-06) | Cel | Status |
+|---------|-------|----------------------|-----|--------|
+| Security findings (Critical) | 3 | **0** | 0 | DONE |
+| Security findings (High) | 5 | **0** | 0 | DONE |
+| Test coverage | ~2% | **27 testow** | >40% | W TRAKCIE |
+| Dead files | 12+ | **0** | 0 | DONE |
+| Firestore queries per request (analytics) | ~12 | **~1** | ~2 | DONE |
+| CSP unsafe-inline | Tak | **Nie** | Nie | DONE |
+| Account lockout | Brak | **15 min po 5 probach** | Po 5 probach | DONE |
+| Password min length | 3 | **8** | 8 | DONE |
