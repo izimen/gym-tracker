@@ -7,8 +7,10 @@ function safeSanitize(html) {
     if (typeof DOMPurify !== 'undefined') {
         return DOMPurify.sanitize(html);
     }
-    console.warn('DOMPurify not loaded, falling back to raw HTML');
-    return html;
+    console.warn('DOMPurify not loaded, stripping HTML tags');
+    const el = document.createElement('div');
+    el.textContent = html;
+    return el.innerHTML;
 }
 
 // ============================================

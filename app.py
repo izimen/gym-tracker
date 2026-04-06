@@ -326,7 +326,8 @@ def get_stats():
             result['history_count'] = database.get_history_count()
         except Exception as e:
             print(f"Stats fetch error: {e}")
-            result['error'] = str(e)
+            app.logger.error(f"Stats fetch error: {e}")
+            result['error'] = 'Failed to load stats'
     
     return jsonify(result)
 
@@ -365,6 +366,7 @@ def calendar():
 
 
 @app.route('/api/workout', methods=['POST'])
+@limiter.limit("60 per minute")
 def save_workout():
     """Save a workout for a date"""
     if not FIRESTORE_ENABLED:
@@ -398,10 +400,12 @@ def save_workout():
         database.save_workout(date_str, body_parts, weight_data, notes, user_id)
         return jsonify({'success': True, 'date': date_str})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/workout/<date_str>', methods=['GET'])
+@limiter.limit("60 per minute")
 def get_workout(date_str):
     """Get workout for a specific date"""
     if not FIRESTORE_ENABLED:
@@ -415,10 +419,12 @@ def get_workout(date_str):
         workout = database.get_workout(date_str, user_id)
         return jsonify(workout or {})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/workout/<date_str>', methods=['DELETE'])
+@limiter.limit("60 per minute")
 def delete_workout(date_str):
     """Delete workout for a specific date"""
     if not FIRESTORE_ENABLED:
@@ -432,10 +438,12 @@ def delete_workout(date_str):
         database.delete_workout(date_str, user_id)
         return jsonify({'success': True})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/workouts/month/<int:year>/<int:month>')
+@limiter.limit("30 per minute")
 def get_month_workouts(year, month):
     """Get all workouts for a month"""
     if not FIRESTORE_ENABLED:
@@ -454,10 +462,12 @@ def get_month_workouts(year, month):
             'body_parts_config': database.BODY_PARTS
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/workouts/dashboard')
+@limiter.limit("30 per minute")
 def get_workout_dashboard():
     """Get all workout stats for the dashboard"""
     if not FIRESTORE_ENABLED:
@@ -472,7 +482,8 @@ def get_workout_dashboard():
         stats['firestore_enabled'] = True
         return jsonify(stats)
     except Exception as e:
-        return jsonify({'error': str(e), 'firestore_enabled': True}), 500
+        app.logger.error(f"Dashboard stats error: {e}")
+        return jsonify({'error': 'Internal server error', 'firestore_enabled': True}), 500
 
 
 # =============================================================================
@@ -480,6 +491,7 @@ def get_workout_dashboard():
 # =============================================================================
 
 @app.route('/api/analytics/weekly')
+@limiter.limit("30 per minute")
 def get_analytics_weekly():
     """Get weekly workout history for the last 12 weeks"""
     if not FIRESTORE_ENABLED:
@@ -493,10 +505,12 @@ def get_analytics_weekly():
         data = database.get_weekly_workout_history(weeks=12, user_id=user_id)
         return jsonify({'weeks': data})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/analytics/heatmap/<int:year>')
+@limiter.limit("30 per minute")
 def get_analytics_heatmap(year):
     """Get yearly heatmap data"""
     if not FIRESTORE_ENABLED:
@@ -510,10 +524,12 @@ def get_analytics_heatmap(year):
         data = database.get_yearly_heatmap_data(year, user_id)
         return jsonify(data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/analytics/comparison')
+@limiter.limit("30 per minute")
 def get_analytics_comparison():
     """Get month-to-month comparison"""
     if not FIRESTORE_ENABLED:
@@ -527,20 +543,27 @@ def get_analytics_comparison():
         data = database.get_month_comparison(user_id)
         return jsonify(data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/analytics/best-hours')
+@limiter.limit("30 per minute")
 def get_analytics_best_hours():
     """Get best gym hours analysis"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
-    
+
+    user_id, err = require_login()
+    if err:
+        return err
+
     try:
         data = database.get_hourly_stats()
         return jsonify(data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/analytics/extended')
@@ -549,12 +572,17 @@ def get_analytics_extended():
     """Get extended occupancy statistics for the dashboard"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
-    
+
+    user_id, err = require_login()
+    if err:
+        return err
+
     try:
         data = database.get_extended_occupancy_stats()
         return jsonify(data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/analytics/new-year')
@@ -563,21 +591,31 @@ def get_new_year_stats():
     """Get New Year's resolution effect statistics - January vs December comparison"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
-    
+
+    user_id, err = require_login()
+    if err:
+        return err
+
     try:
         year = request.args.get('year', type=int)
         data = database.get_new_year_effect(year)
         return jsonify(data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/analytics/completeness/<int:year>/<int:month>')
+@limiter.limit("30 per minute")
 def get_data_completeness(year, month):
     """Get data collection completeness status for each day of a month"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
-    
+
+    user_id, err = require_login()
+    if err:
+        return err
+
     try:
         data = database.get_data_completeness_for_month(year, month)
         return jsonify({
@@ -586,15 +624,26 @@ def get_data_completeness(year, month):
             'days': data
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/debug/day/<date_str>')
+@limiter.limit("10 per minute")
 def debug_day_data(date_str):
-    """Debug endpoint to check raw hourly data for a specific day"""
+    """Debug endpoint to check raw hourly data for a specific day (admin only)"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
-    
+
+    # Admin protection (SEC-03)
+    secret = request.headers.get('X-Admin-Secret') or ''
+    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    # Validate date format (SEC-10)
+    if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+        return jsonify({'error': 'Invalid date format, use YYYY-MM-DD'}), 400
+
     try:
         db = database.get_db()
         
@@ -636,7 +685,8 @@ def debug_day_data(date_str):
             'is_complete_day': is_complete
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 # =============================================================================
@@ -719,7 +769,7 @@ def admin_reset_password():
     
     
     # Admin protection - require secret via header or query param (timing-safe comparison)
-    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
+    secret = request.headers.get('X-Admin-Secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
     
@@ -746,7 +796,7 @@ def list_users():
     
     
     # Admin protection - require secret via header or query param (timing-safe comparison)
-    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
+    secret = request.headers.get('X-Admin-Secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -754,21 +804,22 @@ def list_users():
         users = database.get_all_users()
         return jsonify({'users': users, 'count': len(users)})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 # =============================================================================
 # ADMIN API ENDPOINTS
 # =============================================================================
 
-@app.route('/api/admin/reset-hourly')
+@app.route('/api/admin/reset-hourly', methods=['DELETE'])
 def reset_hourly_data():
     """Reset hourly occupancy data - clears all records to start fresh"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
     # Admin protection - require secret via header or query param (timing-safe comparison)
-    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
+    secret = request.headers.get('X-Admin-Secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -780,7 +831,8 @@ def reset_hourly_data():
             'deleted_count': deleted_count
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/admin/debug-weekday/<int:weekday>')
@@ -789,7 +841,7 @@ def debug_weekday_data(weekday):
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
-    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
+    secret = request.headers.get('X-Admin-Secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -851,7 +903,8 @@ def debug_weekday_data(weekday):
             'records_sample': sorted(all_records, key=lambda x: (x['date'], x['hour'] or 0))[-20:]
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 # =============================================================================
@@ -859,13 +912,14 @@ def debug_weekday_data(weekday):
 # =============================================================================
 
 @app.route('/api/export/workouts')
+@limiter.limit("5 per hour")
 def export_workouts():
     """Export all workouts as JSON (admin only)"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
     # Require admin secret via header or query param (timing-safe comparison)
-    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
+    secret = request.headers.get('X-Admin-Secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -884,13 +938,14 @@ def export_workouts():
 
 
 @app.route('/api/export/full')
+@limiter.limit("5 per hour")
 def export_full():
     """Export full backup of all data (admin only)"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
     
     # Require admin secret via header or query param (timing-safe comparison)
-    secret = request.headers.get('X-Admin-Secret') or request.args.get('secret') or ''
+    secret = request.headers.get('X-Admin-Secret') or ''
     if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     
@@ -905,6 +960,7 @@ def export_full():
 
 
 @app.route('/api/strength')
+@limiter.limit("30 per minute")
 def get_strength_stats():
     """Get strength statistics: PRs, volume, etc."""
     if not FIRESTORE_ENABLED:
@@ -918,19 +974,25 @@ def get_strength_stats():
         stats = database.get_strength_stats(user_id)
         return jsonify(stats)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/progression/<part>')
+@limiter.limit("30 per minute")
 def get_progression(part):
     """Get weight progression for a specific body part"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
-    
+
+    # Validate body part (SEC-13)
+    if part not in database.BODY_PARTS:
+        return jsonify({'error': f'Invalid body part: {part}'}), 400
+
     user_id, err = require_login()
     if err:
         return err
-    
+
     try:
         progression = database.get_progression(part, user_id)
         return jsonify({
@@ -939,7 +1001,8 @@ def get_progression(part):
             'config': database.BODY_PARTS.get(part, {})
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Internal error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/health')
@@ -967,7 +1030,7 @@ def add_security_headers(response):
     # Security Headers
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['X-XSS-Protection'] = '0'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
@@ -982,6 +1045,7 @@ def add_security_headers(response):
         "img-src 'self' data: https://fav.farm; "
         "font-src 'self' https://fonts.gstatic.com; "
         "connect-src 'self'; "
+        "object-src 'none'; "
         "frame-ancestors 'self'; "
         "base-uri 'self'; "
         "form-action 'self';"
