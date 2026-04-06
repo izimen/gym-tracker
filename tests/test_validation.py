@@ -13,7 +13,7 @@ class TestPasswordValidation:
     def test_empty_password_rejected(self):
         valid, err = validate_password('')
         assert not valid
-        assert 'required' in err.lower()
+        assert 'wymagane' in err.lower()
 
     def test_short_password_rejected(self):
         valid, err = validate_password('abc')
@@ -27,7 +27,7 @@ class TestPasswordValidation:
     def test_8_char_no_complexity_rejected(self):
         valid, err = validate_password('abcdefgh')
         assert not valid
-        assert 'digit' in err.lower() or 'uppercase' in err.lower() or 'special' in err.lower()
+        assert 'cyfr' in err.lower() or 'wielk' in err.lower() or 'specjaln' in err.lower()
 
     def test_8_char_with_digit_accepted(self):
         valid, err = validate_password('abcdefg1')
@@ -72,7 +72,7 @@ class TestUsernameValidation:
     def test_special_chars_rejected(self):
         valid, err = validate_username('user@name')
         assert not valid
-        assert 'letters' in err.lower() or 'digits' in err.lower()
+        assert 'litery' in err.lower() or 'cyfry' in err.lower()
 
     def test_spaces_rejected(self):
         valid, err = validate_username('user name')
