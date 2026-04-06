@@ -342,7 +342,7 @@ async function fetchMonthWorkouts() {
 
 async function fetchCompleteness() {
     try {
-        const response = await fetch(`/api/analytics/completeness/${currentYear}/${currentMonth}`);
+        const response = await authFetch(`/api/analytics/completeness/${currentYear}/${currentMonth}`);
         const data = await response.json();
         if (data.days) {
             completenessData = data.days;
@@ -789,7 +789,7 @@ async function fetchExtendedStats() {
     }
 
     try {
-        const response = await fetch('/api/analytics/extended');
+        const response = await authFetch('/api/analytics/extended');
         if (!response.ok) {
             if (response.status === 429) {
                 console.warn('Rate limited, skipping extended stats');
@@ -873,7 +873,7 @@ function showStatsErrorMessage() {
 
 async function fetchNewYearStats() {
     try {
-        const response = await fetch('/api/analytics/new-year');
+        const response = await authFetch('/api/analytics/new-year');
         if (!response.ok) {
             if (response.status === 429) {
                 console.warn('Rate limited, skipping new year stats');
@@ -1297,7 +1297,7 @@ function renderComparison(data) {
 // ============================================
 async function downloadBackup() {
     try {
-        const response = await fetch('/api/export/full');
+        const response = await authFetch('/api/export/full');
         const data = await response.json();
         downloadJSON(data, 'gym_tracker_backup.json');
     } catch (error) {
@@ -1308,7 +1308,7 @@ async function downloadBackup() {
 
 async function downloadWorkouts() {
     try {
-        const response = await fetch('/api/export/workouts');
+        const response = await authFetch('/api/export/workouts');
         const data = await response.json();
         downloadJSON(data, 'workouts_backup.json');
     } catch (error) {
