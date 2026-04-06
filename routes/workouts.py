@@ -1,11 +1,38 @@
 """Workout routes: CRUD, month view, dashboard stats, strength, progression."""
 
 from flask import Blueprint, jsonify, request, render_template, current_app
+from pydantic import BaseModel, field_validator
+from typing import Optional
 import re
 import database
 from extensions import FIRESTORE_ENABLED, limiter, require_login
 
 workouts_bp = Blueprint('workouts', __name__)
+
+
+class WorkoutPayload(BaseModel):
+    date: str
+    body_parts: list[str]
+    weight_data: Optional[dict] = None
+    notes: Optional[str] = None
+
+    @field_validator('date')
+    @classmethod
+    def validate_date_format(cls, v):
+        if not re.match(r'^\d{4}-\d{2}-\d{2}$', v):
+            raise ValueError('Format daty musi być YYYY-MM-DD')
+        return v
+
+    @field_validator('body_parts')
+    @classmethod
+    def validate_body_parts(cls, v):
+        if not v:
+            raise ValueError('Wybierz przynajmniej jedną partię ciała')
+        valid = database.BODY_PARTS.keys()
+        for part in v:
+            if part not in valid:
+                raise ValueError(f'Nieprawidłowa partia ciała: {part}')
+        return v
 
 
 @workouts_bp.route('/calendar')
@@ -21,31 +48,22 @@ def save_workout():
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    data = request.get_json()
-
-    if not data or 'date' not in data or 'body_parts' not in data:
-        return jsonify({'error': 'Missing date or body_parts'}), 400
-
-    date_str = data['date']
-
-    if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
-        return jsonify({'error': 'Invalid date format, use YYYY-MM-DD'}), 400
-
-    body_parts = data['body_parts']
-    weight_data = data.get('weight_data')
-    notes = data.get('notes')
     user_id, err = require_login()
     if err:
         return err
 
-    valid_parts = database.BODY_PARTS.keys()
-    for part in body_parts:
-        if part not in valid_parts:
-            return jsonify({'error': f'Invalid body part: {part}'}), 400
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Brak danych'}), 400
 
     try:
-        database.save_workout(date_str, body_parts, weight_data, notes, user_id)
-        return jsonify({'success': True, 'date': date_str})
+        payload = WorkoutPayload(**data)
+    except Exception as e:
+        return jsonify({'error': str(e).split('\n')[0]}), 400
+
+    try:
+        database.save_workout(payload.date, payload.body_parts, payload.weight_data, payload.notes, user_id)
+        return jsonify({'success': True, 'date': payload.date})
     except Exception as e:
         current_app.logger.error(f"Internal error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
