@@ -18,6 +18,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run smoke tests
+        run: |
+          pip install bcrypt pytz pytest
+          python -m pytest tests/ -v
+
       - name: Google Auth
         id: auth
         uses: 'google-github-actions/auth@v2'
@@ -34,6 +44,10 @@ jobs:
           flags: '--allow-unauthenticated --clear-base-image'
           env_vars: |
             SECRET_KEY=${{ secrets.SECRET_KEY }}
+            GYM_URL=${{ secrets.GYM_URL }}
+            GYM_EMAIL=${{ secrets.GYM_EMAIL }}
+            GYM_PASSWORD=${{ secrets.GYM_PASSWORD }}
+            ADMIN_SECRET=${{ secrets.ADMIN_SECRET }}
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}

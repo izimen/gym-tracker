@@ -137,12 +137,12 @@
                 <span class="live-count" id="liveCount">--</span>
                 <span class="live-label">osób dzisiaj</span>
             </div>
-            <div class="user-badge" id="userBadge" onclick="logout()">👤 ---</div>
+            <div class="user-badge" id="userBadge" onclick="logout()" role="button" aria-label="Wyloguj się" tabindex="0">👤 ---</div>
         </div>
     </header>
 
     <!-- TAB NAVIGATION -->
-    <nav class="tab-nav">
+    <nav class="tab-nav" aria-label="Nawigacja główna">
         <div class="tabs">
             <button class="tab active" data-tab="calendar">
                 <span class="tab-icon">📅</span>
@@ -185,9 +185,9 @@
 
             <!-- Month Navigation -->
             <div class="month-nav">
-                <button onclick="prevMonth()">←</button>
+                <button onclick="prevMonth()" aria-label="Poprzedni miesiąc">←</button>
                 <div class="current-month" id="currentMonth">Grudzień 2025</div>
-                <button onclick="nextMonth()">→</button>
+                <button onclick="nextMonth()" aria-label="Następny miesiąc">→</button>
             </div>
 
             <!-- Calendar Grid -->
@@ -398,11 +398,11 @@
                 <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
                     <span>🔥 Aktywność treningowa</span>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <button onclick="prevHeatmapYear()"
+                        <button onclick="prevHeatmapYear()" aria-label="Poprzedni rok"
                             style="background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); padding: 6px 12px; cursor: pointer; font-size: 0.9rem;">←</button>
                         <span id="heatmapYear"
                             style="font-size: 0.9rem; font-weight: 600; min-width: 50px; text-align: center;">2025</span>
-                        <button onclick="nextHeatmapYear()"
+                        <button onclick="nextHeatmapYear()" aria-label="Następny rok"
                             style="background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); padding: 6px 12px; cursor: pointer; font-size: 0.9rem;">→</button>
                     </div>
                 </div>
@@ -492,8 +492,8 @@
             <div class="modal-title" id="modalTitle">Dodaj trening</div>
             <div class="body-parts-grid" id="bodyPartsGrid"></div>
             <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeModal()">Anuluj</button>
-                <button class="modal-btn danger" id="deleteBtn" onclick="deleteWorkout()"
+                <button class="modal-btn secondary" onclick="closeModal()" aria-label="Anuluj edycję treningu">Anuluj</button>
+                <button class="modal-btn danger" id="deleteBtn" onclick="deleteWorkout()" aria-label="Usuń trening"
                     style="display: none;">Usuń</button>
                 <button class="modal-btn primary" onclick="saveWorkout()">Zapisz</button>
             </div>

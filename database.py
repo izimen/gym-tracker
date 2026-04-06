@@ -147,13 +147,13 @@ def validate_username(username: str) -> tuple:
     Returns: (is_valid: bool, error_message: str or None)
     """
     if not username:
-        return False, "Username is required"
+        return False, "Nazwa użytkownika jest wymagana"
     if len(username) < 3:
-        return False, "Username must be at least 3 characters"
+        return False, "Nazwa użytkownika musi mieć minimum 3 znaki"
     if len(username) > 20:
-        return False, "Username must be at most 20 characters"
+        return False, "Nazwa użytkownika może mieć maksymalnie 20 znaków"
     if not re.match(r'^[a-zA-Z0-9]+$', username):
-        return False, "Username can only contain letters and digits"
+        return False, "Nazwa użytkownika może zawierać tylko litery i cyfry"
     return True, None
 
 
@@ -163,17 +163,17 @@ def validate_password(password: str) -> tuple:
     Returns: (is_valid: bool, error_message: str or None)
     """
     if not password:
-        return False, "Password is required"
+        return False, "Hasło jest wymagane"
     if len(password) < 8:
-        return False, "Password must be at least 8 characters"
+        return False, "Hasło musi mieć minimum 8 znaków"
     if len(password) > 128:
-        return False, "Password must be at most 128 characters"
+        return False, "Hasło może mieć maksymalnie 128 znaków"
     # Require at least one: digit, uppercase letter, or special character
     has_digit = any(c.isdigit() for c in password)
     has_upper = any(c.isupper() for c in password)
     has_special = any(not c.isalnum() for c in password)
     if not (has_digit or has_upper or has_special):
-        return False, "Password must contain at least one digit, uppercase letter, or special character"
+        return False, "Hasło musi zawierać cyfrę, wielką literę lub znak specjalny"
     return True, None
 
 
@@ -213,7 +213,7 @@ def create_user(username: str, password: str) -> dict:
     existing = db.collection('users').where('username_lower', '==', username_lower).limit(1).stream()
     
     if any(True for _ in existing):
-        return {'success': False, 'error': 'Username already taken'}
+        return {'success': False, 'error': 'Nazwa użytkownika jest już zajęta'}
     
     # Create user
     user_id = str(uuid.uuid4())
@@ -279,7 +279,7 @@ def authenticate_user(username: str, password: str) -> dict:
     Returns: {'success': True, 'user_id': ..., 'username': ...} or {'success': False, 'error': ...}
     """
     if not username or not password:
-        return {'success': False, 'error': 'Username and password required'}
+        return {'success': False, 'error': 'Nazwa użytkownika i hasło są wymagane'}
 
     db = get_db()
     username_lower = username.lower()
@@ -294,7 +294,7 @@ def authenticate_user(username: str, password: str) -> dict:
             lock_time = datetime.fromisoformat(locked_until)
             if now < lock_time:
                 remaining = int((lock_time - now).total_seconds())
-                return {'success': False, 'error': f'Account locked. Try again in {remaining // 60 + 1} minutes.'}
+                return {'success': False, 'error': f'Konto zablokowane. Spróbuj ponownie za {remaining // 60 + 1} min.'}
         except (ValueError, TypeError):
             pass
 
@@ -311,12 +311,12 @@ def authenticate_user(username: str, password: str) -> dict:
         _dummy_hash = '$2b$12$N8nDf0hp1fhteQ0BFO3FruehnobfLHO9r55zh4nl/aYUtjrXaEExi'
         verify_password(password, _dummy_hash)
         _record_failed_login(username_lower)
-        return {'success': False, 'error': 'Invalid username or password'}
+        return {'success': False, 'error': 'Nieprawidłowa nazwa użytkownika lub hasło'}
 
     # Verify password
     if not verify_password(password, user_doc.get('password_hash', '')):
         _record_failed_login(username_lower)
-        return {'success': False, 'error': 'Invalid username or password'}
+        return {'success': False, 'error': 'Nieprawidłowa nazwa użytkownika lub hasło'}
 
     # Success — clear lockout tracking
     _clear_login_attempts(username_lower)
