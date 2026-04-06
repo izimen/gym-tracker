@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cube Fitness{% endblock %}</title>
+    <link rel="icon" href="https://fav.farm/🏋️">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/static/js/purify.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #a78bfa;
+            --primary-dark: #5b21b6;
+            --success: #10b981;
+            --success-light: #34d399;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0a0a12;
+            --bg-card: #12121f;
+            --bg-card-hover: #1a1a2a;
+            --bg-input: #0d0d16;
+            --bg-day: #111122;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d0;
+            --text-muted: #9090a8;
+            --border: #1f1f35;
+            --border-light: #2a2a45;
+            --glow: rgba(124, 58, 237, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    {% block body %}{% endblock %}
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

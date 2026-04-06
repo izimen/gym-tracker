@@ -11,3 +11,22 @@ venv
 .gitignore
 uruchom.bat
 setup_server.sh
+
+# Sensitive files - NEVER include in Docker image
+.env
+.env.*
+*.env
+
+# IDE / dev artifacts
+.idea/
+.claude/
+.planning/
+
+# Non-production content
+design-showcase/
+AUDIT/
+tests/
+scripts/
+stats-dashboard/
+dashboard_old.html
+response.html

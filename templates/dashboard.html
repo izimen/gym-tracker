@@ -1,48 +1,10 @@
-<!DOCTYPE html>
-<html lang="pl">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cube Dashboard</title>
-    <link rel="icon" href="https://fav.farm/🏋️">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="/static/js/purify.min.js"></script>
+{% block title %}Cube Dashboard{% endblock %}
+
+{% block head %}
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #7c3aed;
-            --primary-light: #a78bfa;
-            --primary-dark: #5b21b6;
-            --success: #10b981;
-            --success-light: #34d399;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --bg-dark: #0a0a12;
-            --bg-card: #12121f;
-            --bg-card-hover: #1a1a2a;
-            --bg-input: #0d0d16;
-            --text-primary: #ffffff;
-            --text-secondary: #b8b8d0;
-            --text-muted: #6b6b80;
-            --border: #1f1f35;
-            --border-light: #2a2a45;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+        body { overflow-x: hidden; }
 
         .header {
             position: sticky;
@@ -122,9 +84,12 @@
         }
     </style>
     <link rel="stylesheet" href="/static/css/dashboard.css">
-</head>
+{% endblock %}
 
-<body>
+{% block body %}
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <!-- HEADER -->
     <header class="header">
         <div class="header-content">
@@ -137,12 +102,12 @@
                 <span class="live-count" id="liveCount">--</span>
                 <span class="live-label">osób dzisiaj</span>
             </div>
-            <div class="user-badge" id="userBadge" onclick="logout()">👤 ---</div>
+            <div class="user-badge" id="userBadge" onclick="logout()" role="button" aria-label="Wyloguj się" tabindex="0">👤 ---</div>
         </div>
     </header>
 
     <!-- TAB NAVIGATION -->
-    <nav class="tab-nav">
+    <nav class="tab-nav" aria-label="Nawigacja główna">
         <div class="tabs">
             <button class="tab active" data-tab="calendar">
                 <span class="tab-icon">📅</span>
@@ -185,9 +150,9 @@
 
             <!-- Month Navigation -->
             <div class="month-nav">
-                <button onclick="prevMonth()">←</button>
+                <button onclick="prevMonth()" aria-label="Poprzedni miesiąc">←</button>
                 <div class="current-month" id="currentMonth">Grudzień 2025</div>
-                <button onclick="nextMonth()">→</button>
+                <button onclick="nextMonth()" aria-label="Następny miesiąc">→</button>
             </div>
 
             <!-- Calendar Grid -->
@@ -215,50 +180,30 @@
                 <div class="card-title">📊 Statystyki obłożenia</div>
 
                 <!-- Quick stats row -->
-                <div
-                    style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch;">
-                    <div
-                        style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center; flex: 1; min-width: 100px;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); white-space: nowrap;"
-                            id="statsAvgWeekday">
-                            --</div>
-                        <div style="font-size: 0.6rem; color: var(--text-muted); white-space: nowrap;"
-                            id="statsWeekdayLabel">Śr. piątek
-                        </div>
+                <div class="stats-row">
+                    <div class="stat-mini-card">
+                        <div class="stat-mini-value" id="statsAvgWeekday">--</div>
+                        <div class="stat-mini-label" id="statsWeekdayLabel">Śr. piątek</div>
                     </div>
-                    <div
-                        style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center; flex: 1; min-width: 100px;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); white-space: nowrap;"
-                            id="statsWeekdayHour">--</div>
-                        <div style="font-size: 0.6rem; color: var(--text-muted); white-space: nowrap;"
-                            id="statsWeekdayHourLabel">Śr. piątek
-                            o tej porze</div>
+                    <div class="stat-mini-card">
+                        <div class="stat-mini-value" id="statsWeekdayHour">--</div>
+                        <div class="stat-mini-label" id="statsWeekdayHourLabel">Śr. piątek o tej porze</div>
                     </div>
-                    <div
-                        style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center; flex: 1; min-width: 100px;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); white-space: nowrap;"
-                            id="statsAvgHour">
-                            --</div>
-                        <div style="font-size: 0.6rem; color: var(--text-muted); white-space: nowrap;">Śr. o tej porze
-                        </div>
+                    <div class="stat-mini-card">
+                        <div class="stat-mini-value" id="statsAvgHour">--</div>
+                        <div class="stat-mini-label">Śr. o tej porze</div>
                     </div>
-                    <div
-                        style="background: var(--bg-input); border-radius: 10px; padding: 12px; text-align: center; flex: 1; min-width: 100px;">
-                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); white-space: nowrap;"
-                            id="statsLiveNow">
-                            --
-                        </div>
-                        <div style="font-size: 0.6rem; color: var(--text-muted); white-space: nowrap;">Teraz</div>
+                    <div class="stat-mini-card">
+                        <div class="stat-mini-value" id="statsLiveNow">--</div>
+                        <div class="stat-mini-label">Teraz</div>
                     </div>
                 </div>
 
                 <!-- Daily averages chart -->
-                <div style="margin-bottom: 20px;">
-                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">📅 Średnia dla
-                        każdego dnia tygodnia:</div>
-                    <div id="dailyChart"
-                        style="display: flex; align-items: flex-end; justify-content: space-between; height: 140px; gap: 4px; padding-top: 25px;">
-                        <div style="text-align: center; width: 100%; color: var(--text-muted);">Ładowanie...</div>
+                <div class="daily-avg-section">
+                    <div class="daily-avg-label">📅 Średnia dla każdego dnia tygodnia:</div>
+                    <div id="dailyChart" class="daily-avg-chart">
+                        <div class="loading-text">Ładowanie...</div>
                     </div>
                 </div>
 
@@ -284,64 +229,45 @@
                         </div>
                     </div>
                     <div id="hourlyChart" class="hourly-chart">
-                        <div style="text-align: center; padding: 40px; width: 100%; color: var(--text-muted);">
-                            Ładowanie...</div>
+                        <div class="loading-text" style="padding: 40px;">Ładowanie...</div>
                     </div>
                 </div>
 
 
                 <!-- Best/Worst times -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <!-- Best times -->
-                    <div
-                        style="background: rgba(16, 185, 129, 0.1); border-radius: 12px; padding: 14px; border: 1px solid rgba(16, 185, 129, 0.2);">
-                        <div style="font-size: 0.75rem; color: var(--success); margin-bottom: 10px; font-weight: 600;">
-                            🏆 TOP 3 Najlepsze</div>
-                        <div id="bestTimesList" style="display: flex; flex-direction: column; gap: 6px;">
-                            <div style="color: var(--text-muted); font-size: 0.8rem;">Ładowanie...</div>
+                <div class="times-grid">
+                    <div class="times-card-best">
+                        <div class="times-card-title">🏆 TOP 3 Najlepsze</div>
+                        <div id="bestTimesList" class="times-list">
+                            <div class="loading-text-sm">Ładowanie...</div>
                         </div>
                     </div>
-                    <!-- Worst times -->
-                    <div
-                        style="background: rgba(239, 68, 68, 0.1); border-radius: 12px; padding: 14px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                        <div style="font-size: 0.75rem; color: var(--danger); margin-bottom: 10px; font-weight: 600;">⚠️
-                            TOP 3 Najgorsze</div>
-                        <div id="worstTimesList" style="display: flex; flex-direction: column; gap: 6px;">
-                            <div style="color: var(--text-muted); font-size: 0.8rem;">Ładowanie...</div>
+                    <div class="times-card-worst">
+                        <div class="times-card-title">⚠️ TOP 3 Najgorsze</div>
+                        <div id="worstTimesList" class="times-list">
+                            <div class="loading-text-sm">Ładowanie...</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- New Year Effect Card -->
-                <div id="newYearCard"
-                    style="margin-top: 16px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15)); border-radius: 12px; padding: 16px; border: 1px solid rgba(139, 92, 246, 0.3);">
-                    <div style="font-size: 0.85rem; color: #a78bfa; margin-bottom: 12px; font-weight: 600;">
-                        🎆 EFEKT NOWOROCZNY
-                    </div>
+                <div id="newYearCard" class="new-year-panel">
+                    <div class="new-year-title">🎆 EFEKT NOWOROCZNY</div>
 
-                    <div style="display: flex; flex-wrap: wrap; gap: 24px;">
-                        <!-- LEFT COLUMN: Main Stats -->
-                        <div style="flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 10px;">
-                            <!-- Main percentage change -->
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span
-                                    style="font-size: 1.1rem; background: rgba(255,255,255,0.1); padding: 6px; border-radius: 8px;">📈</span>
+                    <div class="new-year-content">
+                        <div class="new-year-stats">
+                            <div class="new-year-stat-row">
+                                <span class="new-year-icon">📈</span>
                                 <span id="newYearMainChange"
                                     style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">--</span>
                             </div>
-
-                            <!-- Today's weekday comparison -->
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span
-                                    style="font-size: 1.1rem; background: rgba(255,255,255,0.1); padding: 6px; border-radius: 8px;">📅</span>
+                            <div class="new-year-stat-row">
+                                <span class="new-year-icon">📅</span>
                                 <span id="newYearWeekday"
                                     style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">--</span>
                             </div>
-
-                            <!-- Peak day -->
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span
-                                    style="font-size: 1.1rem; background: rgba(255,255,255,0.1); padding: 6px; border-radius: 8px;">🏆</span>
+                            <div class="new-year-stat-row">
+                                <span class="new-year-icon">🏆</span>
                                 <span id="newYearPeak"
                                     style="font-size: 0.8rem; color: var(--text-secondary);">--</span>
                             </div>
@@ -350,8 +276,7 @@
                         <!-- RIGHT COLUMN: Weekly Trend -->
                         <!-- Using display:none initially, JS toggles to block. 
                              Since block layout works fine for vertical stacking, we don't need flex here. -->
-                        <div id="newYearTrend"
-                            style="flex: 1; min-width: 220px; display: none; border-left: 1px solid rgba(139, 92, 246, 0.2); padding-left: 24px;">
+                        <div id="newYearTrend" class="new-year-detail">
                             <div
                                 style="font-size: 0.75rem; color: #a78bfa; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
                                 📊 Trend Tygodniowy
@@ -398,21 +323,19 @@
                 <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
                     <span>🔥 Aktywność treningowa</span>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <button onclick="prevHeatmapYear()"
+                        <button onclick="prevHeatmapYear()" aria-label="Poprzedni rok"
                             style="background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); padding: 6px 12px; cursor: pointer; font-size: 0.9rem;">←</button>
                         <span id="heatmapYear"
                             style="font-size: 0.9rem; font-weight: 600; min-width: 50px; text-align: center;">2025</span>
-                        <button onclick="nextHeatmapYear()"
+                        <button onclick="nextHeatmapYear()" aria-label="Następny rok"
                             style="background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); padding: 6px 12px; cursor: pointer; font-size: 0.9rem;">→</button>
                     </div>
                 </div>
-                <div id="faceitHeatmap" style="display: flex; gap: 8px; overflow-x: auto; padding: 5px 0;"></div>
-                <div
-                    style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.65rem; color: var(--text-muted);">
-                    <div style="width: 12px; height: 12px; background: var(--bg-input); border-radius: 3px;"></div>
+                <div id="faceitHeatmap" class="heatmap-container"></div>
+                <div class="heatmap-legend">
+                    <div class="heatmap-legend-box" style="background: var(--bg-input);"></div>
                     <span>Brak treningu</span>
-                    <div style="width: 12px; height: 12px; background: #10b981; border-radius: 3px; margin-left: 10px;">
-                    </div>
+                    <div class="heatmap-legend-box" style="background: #10b981; margin-left: 10px;"></div>
                     <span>Trening</span>
                 </div>
             </div>
@@ -423,32 +346,21 @@
             <!-- Personal Records -->
             <div class="card">
                 <div class="card-title">🏆 Osobiste rekordy (PR)</div>
-                <div id="recordsGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                    <div style="text-align: center; padding: 20px; color: var(--text-muted);">Ładowanie...</div>
+                <div id="recordsGrid" class="records-grid">
+                    <div class="loading-text" style="padding: 20px;">Ładowanie...</div>
                 </div>
             </div>
 
             <!-- Progression Chart -->
             <div class="card">
                 <div class="card-title">📈 Progresja ciężaru</div>
-                <div style="margin-bottom: 12px;">
-                    <select id="progressionSelect" onchange="fetchProgression(this.value)" style="
-                        width: 100%;
-                        padding: 12px;
-                        background: var(--bg-input);
-                        border: 1px solid var(--border);
-                        border-radius: 10px;
-                        color: var(--text-primary);
-                        font-size: 0.9rem;
-                    ">
+                <div>
+                    <select id="progressionSelect" onchange="fetchProgression(this.value)" class="progression-select">
                         <option value="">Wybierz partię ciała...</option>
                     </select>
                 </div>
-                <div class="progression-chart" id="progressionChart"
-                    style="height: 150px; display: flex; align-items: flex-end; gap: 4px; padding-top: 25px;">
-                    <div style="text-align: center; width: 100%; color: var(--text-muted); font-size: 0.85rem;">
-                        Wybierz partię ciała aby zobaczyć progresję
-                    </div>
+                <div class="progression-chart" id="progressionChart">
+                    <div class="loading-text">Wybierz partię ciała aby zobaczyć progresję</div>
                 </div>
             </div>
         </div>
@@ -492,8 +404,8 @@
             <div class="modal-title" id="modalTitle">Dodaj trening</div>
             <div class="body-parts-grid" id="bodyPartsGrid"></div>
             <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeModal()">Anuluj</button>
-                <button class="modal-btn danger" id="deleteBtn" onclick="deleteWorkout()"
+                <button class="modal-btn secondary" onclick="closeModal()" aria-label="Anuluj edycję treningu">Anuluj</button>
+                <button class="modal-btn danger" id="deleteBtn" onclick="deleteWorkout()" aria-label="Usuń trening"
                     style="display: none;">Usuń</button>
                 <button class="modal-btn primary" onclick="saveWorkout()">Zapisz</button>
             </div>
@@ -536,7 +448,8 @@
         </div>
     </div>
 
-    <script src="/static/js/dashboard.js" defer></script>
-    </body>
+{% endblock %}
 
-</html>
+{% block scripts %}
+    <script src="/static/js/dashboard.js" defer></script>
+{% endblock %}
