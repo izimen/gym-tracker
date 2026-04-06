@@ -231,7 +231,7 @@ async function saveWorkout() {
     try {
         const response = await fetch('/api/workout', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
             body: JSON.stringify({
                 date: selectedDate,
@@ -262,7 +262,8 @@ async function deleteWorkout() {
     try {
         const response = await fetch(`/api/workout/${selectedDate}`, {
             method: 'DELETE',
-            credentials: 'same-origin'
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
 
         if (response.ok) {

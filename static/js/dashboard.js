@@ -65,6 +65,8 @@ let currentUser = null;
 // Wrapper for fetch that handles 401 (session expired) gracefully
 async function authFetch(url, options = {}) {
     if (!options.credentials) options.credentials = 'same-origin';
+    if (!options.headers) options.headers = {};
+    options.headers['X-Requested-With'] = 'XMLHttpRequest';
     const res = await fetch(url, options);
     if (res.status === 401) {
         clearUser();
@@ -129,7 +131,7 @@ async function handleLogin() {
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
             body: JSON.stringify({ username, password })
         });
@@ -162,7 +164,7 @@ async function handleRegister() {
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
             body: JSON.stringify({ username, password })
         });
@@ -185,7 +187,7 @@ async function handleRegister() {
 async function logout() {
     if (confirm('Czy na pewno chcesz się wylogować?')) {
         try {
-            await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         } catch (e) { /* ignore */ }
         clearUser();
         location.reload();

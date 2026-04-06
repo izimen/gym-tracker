@@ -1048,6 +1048,15 @@ def enforce_https():
         return redirect(url, code=301)
 
 
+@app.before_request
+def csrf_check():
+    """CSRF protection: require X-Requested-With header on state-changing requests (SEC-07).
+    Browsers won't send custom headers cross-origin without CORS preflight."""
+    if request.method in ('POST', 'PUT', 'DELETE') and request.path.startswith('/api/'):
+        if not request.headers.get('X-Requested-With'):
+            return jsonify({'error': 'Missing X-Requested-With header'}), 403
+
+
 @app.after_request
 def add_security_headers(response):
     """Add security, CSP, and caching headers to all responses (unified)"""
@@ -1065,7 +1074,7 @@ def add_security_headers(response):
     # Content Security Policy (includes CDN/fonts domains needed by dashboard)
     csp = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "img-src 'self' data: https://fav.farm; "
         "font-src 'self' https://fonts.gstatic.com; "
