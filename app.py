@@ -1023,8 +1023,17 @@ def get_progression(part):
 
 @app.route('/health')
 def health():
-    """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+    """Health check endpoint with Firestore connectivity test"""
+    result = {'status': 'healthy', 'timestamp': datetime.now().isoformat(), 'firestore': False}
+    if FIRESTORE_ENABLED:
+        try:
+            db = database.get_db()
+            db.collection('daily_entries').limit(1).get()
+            result['firestore'] = True
+        except Exception as e:
+            result['status'] = 'degraded'
+            result['firestore_error'] = str(e)
+    return jsonify(result)
 
 
 # =============================================================================
