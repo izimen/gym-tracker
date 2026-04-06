@@ -14,6 +14,11 @@ from datetime import datetime, timedelta
 import threading
 import time
 import pytz
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+logger = logging.getLogger(__name__)
 
 # Import database module (Firestore)
 try:
@@ -22,7 +27,7 @@ try:
     # Create admin user if not exists (preserves existing workout data)
     database.ensure_admin_user()
 except Exception as e:
-    print(f"Firestore not available: {e}")
+    logger.warning("Firestore not available: %s", e)
     FIRESTORE_ENABLED = False
 
 app = Flask(__name__)
@@ -42,8 +47,8 @@ if not _secret_key:
                 f.write(_secret_key)
         except OSError:
             pass
-    print("WARNING: SECRET_KEY env var not set. Using file-based fallback.")
-    print("Set SECRET_KEY env var in Cloud Run for stable sessions across deployments.")
+    logger.warning("SECRET_KEY env var not set. Using file-based fallback.")
+    logger.warning("Set SECRET_KEY env var in Cloud Run for stable sessions across deployments.")
 app.secret_key = _secret_key
 
 # Session cookie configuration
@@ -97,11 +102,11 @@ DATA_URL = f'{GYM_URL}/na-terenie-klubu' if GYM_URL else None
 
 # Validate required environment variables at startup
 if not GYM_URL:
-    print("WARNING: GYM_URL environment variable is not set!")
-    print("Set it to your gym's eFitness CMS portal URL (e.g., https://your-gym.cms.efitness.com.pl)")
+    logger.warning("GYM_URL environment variable is not set!")
+    logger.warning("Set it to your gym's eFitness CMS portal URL (e.g., https://your-gym.cms.efitness.com.pl)")
 if not GYM_EMAIL or not GYM_PASSWORD:
-    print("WARNING: GYM_EMAIL and GYM_PASSWORD environment variables are not set!")
-    print("The application will not be able to fetch gym data.")
+    logger.warning("GYM_EMAIL and GYM_PASSWORD environment variables are not set!")
+    logger.warning("The application will not be able to fetch gym data.")
 
 # Request timeout in seconds
 REQUEST_TIMEOUT = 15
@@ -132,7 +137,7 @@ def get_gym_session(force_new=False):
         if current_session and not force_new:
             return current_session
             
-        print("Creating new login session...")
+        logger.info("Creating new login session...")
         session = requests.Session()
         session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -154,17 +159,17 @@ def get_gym_session(force_new=False):
             login_response = session.post(LOGIN_URL, data=login_data, allow_redirects=True, timeout=REQUEST_TIMEOUT)
             
             if login_response.status_code == 200:
-                print("Login successful")
+                logger.info("Login successful")
                 current_session = session
                 return session
             else:
-                print(f"Login failed with status: {login_response.status_code}")
+                logger.warning("Login failed with status: %s", login_response.status_code)
                 return None
         except requests.Timeout:
-            print("Login timeout")
+            logger.warning("Login timeout")
             return None
         except Exception as e:
-            print(f"Login error: {e}")
+            logger.error("Login error: %s", e)
             return None
 
 
@@ -177,49 +182,46 @@ def save_to_firestore(entries_count: int):
             # Save hourly occupancy (new - for best hours analysis)
             database.save_hourly_occupancy(entries_count)
         except Exception as e:
-            print(f"Firestore save error: {e}")
+            logger.error("Firestore save error: %s", e)
 
 
 def fetch_entries_data():
-    """Fetch current gym entries count"""
+    """Fetch current gym entries count. Uses atomic dict replacement for thread safety."""
     global entries_cache
-    
+
     try:
         # Try to get data with current session
-        session = get_gym_session()
-        if not session:
-            entries_cache['status'] = 'error'
-            entries_cache['error'] = 'Nie udało się zalogować'
+        gym_sess = get_gym_session()
+        if not gym_sess:
+            entries_cache = {**entries_cache, 'status': 'error', 'error': 'Nie udało się zalogować'}
             return
-        
+
         # Get the entries page
-        response = session.get(DATA_URL, timeout=REQUEST_TIMEOUT)
-        
+        response = gym_sess.get(DATA_URL, timeout=REQUEST_TIMEOUT)
+
         # Check if we were redirected to login page (session expired)
         if response.url.startswith(LOGIN_URL) or '/Login' in response.url:
-            print("Session expired, logging in again...")
-            session = get_gym_session(force_new=True)
-            if session:
-                response = session.get(DATA_URL, timeout=REQUEST_TIMEOUT)
+            logger.info("Session expired, logging in again...")
+            gym_sess = get_gym_session(force_new=True)
+            if gym_sess:
+                response = gym_sess.get(DATA_URL, timeout=REQUEST_TIMEOUT)
             else:
-                entries_cache['status'] = 'error'
-                entries_cache['error'] = 'Sesja wygasła, ponowne logowanie nieudane'
+                entries_cache = {**entries_cache, 'status': 'error', 'error': 'Sesja wygasła, ponowne logowanie nieudane'}
                 return
 
         if response.status_code != 200:
-            entries_cache['status'] = 'error'
-            entries_cache['error'] = f'Błąd HTTP: {response.status_code}'
+            entries_cache = {**entries_cache, 'status': 'error', 'error': f'Błąd HTTP: {response.status_code}'}
             return
-        
+
         # Parse HTML
         soup = BeautifulSoup(response.text, 'html.parser')
         page_text = soup.get_text()
-        
+
         # Find "Aktualnie w klubie" and extract the first number (entries today)
         match = re.search(r'Aktualnie\s+w\s+klubie\s*(\d+)\s*/\s*\d+', page_text, re.IGNORECASE)
-        
+
         entries_today = None
-        
+
         if match:
             entries_today = int(match.group(1))
         else:
@@ -229,30 +231,31 @@ def fetch_entries_data():
                 if int(max_c) > 50:
                     entries_today = int(entries)
                     break
-        
+
         if entries_today is not None:
             tz = pytz.timezone('Europe/Warsaw')
-            entries_cache['entries_today'] = entries_today
-            entries_cache['last_updated'] = datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
-            entries_cache['status'] = 'ok'
-            entries_cache['error'] = None
-            print(f"[{entries_cache['last_updated']}] Entries today: {entries_today}")
-            
+            updated_at = datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
+            # Atomic snapshot replacement — thread-safe without locks
+            entries_cache = {
+                'entries_today': entries_today,
+                'last_updated': updated_at,
+                'status': 'ok',
+                'error': None
+            }
+            logger.info("Entries today: %d (updated %s)", entries_today, updated_at)
+
             # Save to Firestore
             save_to_firestore(entries_today)
         else:
-            print("Could not find entry numbers. Page text sample: " + page_text[:100])
-            entries_cache['status'] = 'error'
-            entries_cache['error'] = 'Nie znaleziono danych o wejściach'
-                
+            logger.warning("Could not find entry numbers. Page text sample: %s", page_text[:100])
+            entries_cache = {**entries_cache, 'status': 'error', 'error': 'Nie znaleziono danych o wejściach'}
+
     except requests.Timeout:
-        entries_cache['status'] = 'error'
-        entries_cache['error'] = 'Przekroczono limit czasu połączenia'
-        print("Request timeout")
+        entries_cache = {**entries_cache, 'status': 'error', 'error': 'Przekroczono limit czasu połączenia'}
+        logger.warning("Request timeout")
     except Exception as e:
-        entries_cache['status'] = 'error'
-        entries_cache['error'] = str(e)
-        print(f"Error fetching data: {e}")
+        entries_cache = {**entries_cache, 'status': 'error', 'error': str(e)}
+        logger.error("Error fetching data: %s", e)
 
 
 def background_updater():
@@ -284,24 +287,27 @@ def legacy():
 def get_occupancy():
     """API endpoint to get current entries (legacy endpoint name)"""
     # If cache is initializing or has no data, fetch fresh data now
-    if entries_cache.get('status') == 'initializing' or entries_cache.get('last_updated') is None:
+    cache = entries_cache  # atomic reference capture
+    if cache.get('status') == 'initializing' or cache.get('last_updated') is None:
         fetch_entries_data()
-    return jsonify(entries_cache)
+        cache = entries_cache
+    return jsonify(cache)
 
 
 @app.route('/api/entries')
 @limiter.limit("200 per hour")
 def get_entries():
     """API endpoint to get current entries"""
-    return jsonify(entries_cache)
+    return jsonify(entries_cache)  # single read — atomic
 
 
 @app.route('/api/stats')
 @limiter.limit("100 per hour")
 def get_stats():
     """API endpoint to get historical statistics"""
+    cache = entries_cache  # atomic reference capture
     result = {
-        'entries_today': entries_cache.get('entries_today', 0),
+        'entries_today': cache.get('entries_today', 0),
         'week_ago': None,
         'week_ago_date': None,
         'average_for_weekday': None,
@@ -325,7 +331,7 @@ def get_stats():
             # Get history count (cached to avoid expensive query)
             result['history_count'] = database.get_history_count()
         except Exception as e:
-            print(f"Stats fetch error: {e}")
+            logger.error("Stats fetch error: %s", e)
             app.logger.error(f"Stats fetch error: {e}")
             result['error'] = 'Failed to load stats'
     
@@ -343,16 +349,17 @@ def refresh_data():
         
         if time_since_last < REFRESH_COOLDOWN:
             remaining = int(REFRESH_COOLDOWN - time_since_last)
+            cache = entries_cache  # atomic reference capture
             return jsonify({
-                **entries_cache,
+                **cache,
                 'rate_limited': True,
                 'retry_after': remaining
             }), 429
-        
+
         last_refresh_time = current_time
-    
+
     fetch_entries_data()
-    return jsonify(entries_cache)
+    return jsonify(entries_cache)  # single read — atomic
 
 
 # =============================================================================
@@ -448,11 +455,14 @@ def get_month_workouts(year, month):
     """Get all workouts for a month"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
-    
+
+    if not (2020 <= year <= 2100) or not (1 <= month <= 12):
+        return jsonify({'error': 'Invalid year or month'}), 400
+
     user_id, err = require_login()
     if err:
         return err
-    
+
     try:
         workouts = database.get_month_workouts(year, month, user_id)
         return jsonify({
@@ -515,7 +525,10 @@ def get_analytics_heatmap(year):
     """Get yearly heatmap data"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
-    
+
+    if not (2020 <= year <= 2100):
+        return jsonify({'error': 'Invalid year'}), 400
+
     user_id, err = require_login()
     if err:
         return err
@@ -611,6 +624,9 @@ def get_data_completeness(year, month):
     """Get data collection completeness status for each day of a month"""
     if not FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
+
+    if not (2020 <= year <= 2100) or not (1 <= month <= 12):
+        return jsonify({'error': 'Invalid year or month'}), 400
 
     user_id, err = require_login()
     if err:
@@ -1065,7 +1081,7 @@ def add_security_headers(response):
 
 if __name__ == '__main__':
     # Initial fetch
-    print("Starting CubeFitness Entries Tracker...")
+    logger.info("Starting CubeFitness Entries Tracker...")
     fetch_entries_data()
     
     # Run the server

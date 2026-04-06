@@ -517,20 +517,14 @@ def get_month_workouts(year: int, month: int, user_id: Optional[str] = None) -> 
     else:
         end_date = f"{year:04d}-{month+1:02d}-01"
     
-    # Query workouts for specific user
+    # Query workouts for specific user (filtered in Firestore, not Python)
     docs = db.collection('workouts')\
+        .where('user_id', '==', user_id)\
         .where('date', '>=', start_date)\
         .where('date', '<', end_date)\
         .stream()
-    
-    workouts = []
-    for doc in docs:
-        data = doc.to_dict()
-        # Include if user_id matches OR if no user_id set (old data, treat as admin)
-        doc_user_id = data.get('user_id', DEFAULT_USER_ID)
-        if doc_user_id == user_id:
-            workouts.append(data)
-    
+
+    workouts = [doc.to_dict() for doc in docs]
     return workouts
 
 
@@ -577,17 +571,12 @@ def get_weekly_workout_count(user_id: Optional[str] = None) -> int:
     end_date = week_end.strftime('%Y-%m-%d')
     
     docs = db.collection('workouts')\
+        .where('user_id', '==', user_id)\
         .where('date', '>=', start_date)\
         .where('date', '<=', end_date)\
         .stream()
-    
-    count = 0
-    for doc in docs:
-        data = doc.to_dict()
-        doc_user_id = data.get('user_id', DEFAULT_USER_ID)
-        if doc_user_id == user_id:
-            count += 1
-    return count
+
+    return sum(1 for _ in docs)
 
 
 def get_monthly_workout_count(year: Optional[int] = None, month: Optional[int] = None, user_id: Optional[str] = None) -> int:
@@ -670,16 +659,15 @@ def get_last_workout(user_id: Optional[str] = None) -> Optional[dict]:
     month_ago = (datetime.now(tz) - timedelta(days=30)).strftime('%Y-%m-%d')
     
     docs = db.collection('workouts')\
+        .where('user_id', '==', user_id)\
         .where('date', '>=', month_ago)\
         .where('date', '<=', today)\
         .order_by('date', direction=firestore.Query.DESCENDING)\
+        .limit(1)\
         .stream()
-    
+
     for doc in docs:
-        data = doc.to_dict()
-        doc_user_id = data.get('user_id', DEFAULT_USER_ID)
-        if doc_user_id == user_id:
-            return data
+        return doc.to_dict()
     return None
 
 
@@ -717,41 +705,50 @@ def get_weekly_workout_history(weeks: int = 12, user_id: Optional[str] = None) -
     if not user_id:
         user_id = DEFAULT_USER_ID
     
+    # Calculate full date range (single query instead of N+1)
+    days_since_monday = now.weekday()
+    oldest_week_start = now - timedelta(days=days_since_monday + ((weeks - 1) * 7))
+    newest_week_end = now - timedelta(days=days_since_monday) + timedelta(days=6)
+
+    range_start = oldest_week_start.strftime('%Y-%m-%d')
+    range_end = newest_week_end.strftime('%Y-%m-%d')
+
+    # Single Firestore query for entire range
+    docs = db.collection('workouts')\
+        .where('user_id', '==', user_id)\
+        .where('date', '>=', range_start)\
+        .where('date', '<=', range_end)\
+        .stream()
+
+    # Collect all workout dates
+    workout_dates = set()
+    for doc in docs:
+        data = doc.to_dict()
+        date_str = data.get('date')
+        if date_str:
+            workout_dates.add(date_str)
+
+    # Group by week
     result = []
-    
     for i in range(weeks - 1, -1, -1):
-        # Calculate week start (Monday)
-        days_since_monday = now.weekday()
         week_start = now - timedelta(days=days_since_monday + (i * 7))
         week_end = week_start + timedelta(days=6)
-        
+
         start_str = week_start.strftime('%Y-%m-%d')
         end_str = week_end.strftime('%Y-%m-%d')
-        
-        # Query workouts in this week
-        docs = db.collection('workouts')\
-            .where('date', '>=', start_str)\
-            .where('date', '<=', end_str)\
-            .stream()
-        
-        count = 0
-        for doc in docs:
-            data = doc.to_dict()
-            doc_user_id = data.get('user_id', DEFAULT_USER_ID)
-            if doc_user_id == user_id:
-                count += 1
-        
-        # Week number format (ISO week)
+
+        count = sum(1 for d in workout_dates if start_str <= d <= end_str)
+
         week_num = week_start.isocalendar()[1]
         week_label = f"{week_start.year}-W{week_num:02d}"
-        
+
         result.append({
             'week': week_label,
             'count': count,
             'start_date': start_str,
             'end_date': end_str
         })
-    
+
     return result
 
 
@@ -773,19 +770,18 @@ def get_yearly_heatmap_data(year: Optional[int] = None, user_id: Optional[str] =
     end_date = f"{year}-12-31"
     
     docs = db.collection('workouts')\
+        .where('user_id', '==', user_id)\
         .where('date', '>=', start_date)\
         .where('date', '<=', end_date)\
         .stream()
-    
+
     heatmap = {}
     for doc in docs:
         data = doc.to_dict()
-        doc_user_id = data.get('user_id', DEFAULT_USER_ID)
-        if doc_user_id == user_id:
-            date_str = data.get('date')
-            body_parts = data.get('body_parts', [])
-            if date_str:
-                heatmap[date_str] = len(body_parts)
+        date_str = data.get('date')
+        body_parts = data.get('body_parts', [])
+        if date_str:
+            heatmap[date_str] = len(body_parts)
     
     return {
         'year': year,
@@ -1267,49 +1263,45 @@ def get_week_ago_same_hour() -> Optional[dict]:
     return None
 
 
-def get_best_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """
-    Get the N best day+hour combinations with lowest average entries.
+    Get the N best or worst day+hour combinations by average entries.
     Uses sliding 2-hour windows (6-8, 7-9, 8-10, ..., 21-23) for analysis.
-    Returns: [{'weekday': 'Śr', 'start_hour': 6, 'avg': 8.2, 'label': 'Śr 6:00-8:00'}, ...]
+    ascending=True returns lowest averages (best times), False returns highest (worst times).
     """
     if cached_data is None:
         cached_data = fetch_recent_hourly_data(30)
-    
+
     # Group data by date
     daily_data = {}
-    
+
     for data in cached_data:
         date_str = data.get('date')
         hour = data.get('hour')
         weekday = data.get('weekday')
         occupancy = data.get('occupancy', 0)
-        
+
         if date_str and hour is not None and weekday is not None and is_gym_open(weekday, hour):
             if date_str not in daily_data:
                 daily_data[date_str] = {}
             daily_data[date_str][hour] = (occupancy, weekday)
-    
+
     # Calculate entries per hour for each day (only complete days)
-    daily_hourly_entries = {}  # {date: {hour: (entries, weekday)}}
-    
+    daily_hourly_entries = {}
+
     for date_str, hours_data in daily_data.items():
         sorted_hours = sorted(hours_data.keys())
         if not sorted_hours:
             continue
-        
-        # Get weekday from first hour's data
+
         _, weekday = hours_data[sorted_hours[0]]
-        
-        # Convert to simple format for is_complete_day check
         simple_hours_data = {h: occ for h, (occ, _) in hours_data.items()}
-        
-        # Skip incomplete days (holidays, early closures)
+
         if not is_complete_day(simple_hours_data, weekday):
             continue
-        
+
         daily_hourly_entries[date_str] = {}
-        
+
         for i, hour in enumerate(sorted_hours):
             occupancy, weekday = hours_data[hour]
             if i == 0:
@@ -1317,30 +1309,22 @@ def get_best_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str
             else:
                 prev_hour = sorted_hours[i - 1]
                 prev_occupancy, _ = hours_data[prev_hour]
-                entries = occupancy - prev_occupancy
-                if entries < 0:
-                    entries = 0
-            
+                entries = max(0, occupancy - prev_occupancy)
+
             daily_hourly_entries[date_str][hour] = (entries, weekday)
-    
+
     # Calculate sliding 2-hour window sums for each weekday
-    # Windows: 6-8, 7-9, 8-10, ..., 21-23
-    window_data = {}  # {(weekday, start_hour): [2-hour sums]}
-    
+    window_data = {}
+
     for date_str, hourly_data in daily_hourly_entries.items():
-        # Get weekday from any hour in this day's data
         first_hour = next(iter(hourly_data.keys()), None)
         if first_hour is None:
             continue
         _, weekday = hourly_data[first_hour]
-        
-        # Check each possible 2-hour window
-        for start_hour in range(6, 22):  # 6-8 through 21-23
-            end_hour = start_hour + 2
-            if end_hour > 23:
-                end_hour = 23
-            
-            # Sum entries for hours in this window
+
+        for start_hour in range(6, 22):
+            end_hour = min(start_hour + 2, 23)
+
             window_sum = 0
             hours_in_window = 0
             for h in range(start_hour, end_hour):
@@ -1348,26 +1332,22 @@ def get_best_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str
                     entries, _ = hourly_data[h]
                     window_sum += entries
                     hours_in_window += 1
-            
-            # Only add if we have data for at least 1 hour in the window
+
             if hours_in_window > 0:
                 key = (weekday, start_hour)
                 if key not in window_data:
                     window_data[key] = []
                 window_data[key].append(window_sum)
-    
+
     # Calculate averages for each window
     averages = []
     for (weekday, start_hour), values in window_data.items():
         if values:
-            # Skip weekend hours outside gym opening hours (8:00-20:00)
-            # Saturday=5, Sunday=6 - gym closed before 8:00 and after 20:00
             if weekday in (5, 6):
                 end_hour = min(start_hour + 2, 23)
-                # Skip if window starts before 8:00 or ends after 20:00
                 if start_hour < 8 or end_hour > 20:
                     continue
-            
+
             avg = sum(values) / len(values)
             end_hour = min(start_hour + 2, 23)
             averages.append({
@@ -1378,127 +1358,19 @@ def get_best_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str
                 'avg': round(float(avg), 1),
                 'label': f"{WEEKDAY_NAMES_SHORT[weekday]} {start_hour}:00-{end_hour}:00"
             })
-    
-    # Sort by average (lowest first = best)
-    averages.sort(key=lambda x: x['avg'])
-    
+
+    averages.sort(key=lambda x: x['avg'], reverse=not ascending)
     return averages[:top_n]
 
+
+def get_best_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+    """Get the N best day+hour combinations with lowest average entries."""
+    return _get_day_hour_combos(top_n, ascending=True, cached_data=cached_data)
 
 
 def get_worst_day_hour_combos(top_n: int = 3, cached_data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
-    """
-    Get the N worst day+hour combinations with highest average entries.
-    Uses sliding 2-hour windows (6-8, 7-9, 8-10, ..., 21-23) for analysis.
-    Returns same format as get_best_day_hour_combos but sorted highest first.
-    """
-    if cached_data is None:
-        cached_data = fetch_recent_hourly_data(30)
-    
-    # Group data by date
-    daily_data = {}
-    
-    for data in cached_data:
-        date_str = data.get('date')
-        hour = data.get('hour')
-        weekday = data.get('weekday')
-        occupancy = data.get('occupancy', 0)
-        
-        if date_str and hour is not None and weekday is not None and is_gym_open(weekday, hour):
-            if date_str not in daily_data:
-                daily_data[date_str] = {}
-            daily_data[date_str][hour] = (occupancy, weekday)
-    
-    # Calculate entries per hour for each day (only complete days)
-    daily_hourly_entries = {}  # {date: {hour: (entries, weekday)}}
-    
-    for date_str, hours_data in daily_data.items():
-        sorted_hours = sorted(hours_data.keys())
-        if not sorted_hours:
-            continue
-        
-        # Get weekday from first hour's data
-        _, weekday = hours_data[sorted_hours[0]]
-        
-        # Convert to simple format for is_complete_day check
-        simple_hours_data = {h: occ for h, (occ, _) in hours_data.items()}
-        
-        # Skip incomplete days (holidays, early closures)
-        if not is_complete_day(simple_hours_data, weekday):
-            continue
-        
-        daily_hourly_entries[date_str] = {}
-        
-        for i, hour in enumerate(sorted_hours):
-            occupancy, weekday = hours_data[hour]
-            if i == 0:
-                entries = occupancy
-            else:
-                prev_hour = sorted_hours[i - 1]
-                prev_occupancy, _ = hours_data[prev_hour]
-                entries = occupancy - prev_occupancy
-                if entries < 0:
-                    entries = 0
-            
-            daily_hourly_entries[date_str][hour] = (entries, weekday)
-    
-    # Calculate sliding 2-hour window sums for each weekday
-    window_data = {}  # {(weekday, start_hour): [2-hour sums]}
-    
-    for date_str, hourly_data in daily_hourly_entries.items():
-        first_hour = next(iter(hourly_data.keys()), None)
-        if first_hour is None:
-            continue
-        _, weekday = hourly_data[first_hour]
-        
-        # Check each possible 2-hour window
-        for start_hour in range(6, 22):  # 6-8 through 21-23
-            end_hour = start_hour + 2
-            if end_hour > 23:
-                end_hour = 23
-            
-            # Sum entries for hours in this window
-            window_sum = 0
-            hours_in_window = 0
-            for h in range(start_hour, end_hour):
-                if h in hourly_data:
-                    entries, _ = hourly_data[h]
-                    window_sum += entries
-                    hours_in_window += 1
-            
-            if hours_in_window > 0:
-                key = (weekday, start_hour)
-                if key not in window_data:
-                    window_data[key] = []
-                window_data[key].append(window_sum)
-    
-    # Calculate averages for each window
-    averages = []
-    for (weekday, start_hour), values in window_data.items():
-        if values:
-            # Skip weekend hours outside gym opening hours (8:00-20:00)
-            # Saturday=5, Sunday=6 - gym closed before 8:00 and after 20:00
-            if weekday in (5, 6):
-                end_hour = min(start_hour + 2, 23)
-                # Skip if window starts before 8:00 or ends after 20:00
-                if start_hour < 8 or end_hour > 20:
-                    continue
-            
-            avg = sum(values) / len(values)
-            end_hour = min(start_hour + 2, 23)
-            averages.append({
-                'weekday': weekday,
-                'weekday_name': WEEKDAY_NAMES_SHORT[weekday],
-                'start_hour': start_hour,
-                'end_hour': end_hour,
-                'avg': round(float(avg), 1),
-                'label': f"{WEEKDAY_NAMES_SHORT[weekday]} {start_hour}:00-{end_hour}:00"
-            })
-    
-    # Sort by average (highest first = worst)
-    averages.sort(key=lambda x: x['avg'], reverse=True)
-    
-    return averages[:top_n]
+    """Get the N worst day+hour combinations with highest average entries."""
+    return _get_day_hour_combos(top_n, ascending=False, cached_data=cached_data)
 
 
 
@@ -1697,17 +1569,14 @@ def get_personal_records(user_id: Optional[str] = None):
     if not user_id:
         user_id = DEFAULT_USER_ID
     
-    docs = db.collection('workouts').stream()
-    
+    docs = db.collection('workouts')\
+        .where('user_id', '==', user_id)\
+        .stream()
+
     records = {}
-    
+
     for doc in docs:
         data = doc.to_dict()
-        # Filter by user_id
-        doc_user_id = data.get('user_id', DEFAULT_USER_ID)
-        if doc_user_id != user_id:
-            continue
-        
         weight_data = data.get('weight_data', {})
         date = data.get('date', '')
         
@@ -1737,17 +1606,15 @@ def get_progression(body_part: str, user_id: Optional[str] = None, limit: int = 
     if not user_id:
         user_id = DEFAULT_USER_ID
     
-    docs = db.collection('workouts').order_by('date').stream()
-    
+    docs = db.collection('workouts')\
+        .where('user_id', '==', user_id)\
+        .order_by('date')\
+        .stream()
+
     progression = []
-    
+
     for doc in docs:
         data = doc.to_dict()
-        # Filter by user_id
-        doc_user_id = data.get('user_id', DEFAULT_USER_ID)
-        if doc_user_id != user_id:
-            continue
-        
         weight_data = data.get('weight_data', {})
         
         if body_part in weight_data:
