@@ -55,7 +55,7 @@ app.secret_key = _secret_key
 app.config['SESSION_COOKIE_SECURE'] = True       # HTTPS only
 app.config['SESSION_COOKIE_HTTPONLY'] = True      # No JS access to cookie
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'    # CSRF protection
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)  # 1-year sessions
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=90)  # 90-day sessions
 
 # CORS Configuration - restrict to allowed origins
 # Set ALLOWED_ORIGINS env var as comma-separated list (e.g., "https://example.com,http://localhost:5000")
@@ -1077,9 +1077,11 @@ def add_security_headers(response):
     )
     response.headers['Content-Security-Policy'] = csp
     
-    # Caching for static assets
-    if request.path.startswith('/static/'):
+    # Caching for static assets (no fingerprinting, so limit JS/CSS cache)
+    if request.path.startswith('/static/') and request.path.endswith('.min.js'):
         response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    elif request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=3600'  # 1 hour for JS/CSS
     elif request.path.endswith('.html') or request.path == '/':
         response.headers['Cache-Control'] = 'no-cache, must-revalidate'
     elif request.path.startswith('/api/'):
