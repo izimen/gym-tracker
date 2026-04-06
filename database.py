@@ -259,10 +259,9 @@ def _record_failed_login(username_lower: str):
     if doc.exists:
         attempts = doc.to_dict().get('attempts', 0) + 1
 
-    data = {'attempts': attempts, 'last_attempt': now.isoformat()}
+    data = {'attempts': attempts, 'last_attempt': time.time()}
     if attempts >= MAX_LOGIN_ATTEMPTS:
-        locked_until = now + timedelta(seconds=LOCKOUT_DURATION_SECONDS)
-        data['locked_until'] = locked_until.isoformat()
+        data['locked_until'] = time.time() + LOCKOUT_DURATION_SECONDS
 
     ref.set(data)
 
@@ -290,13 +289,9 @@ def authenticate_user(username: str, password: str) -> dict:
     attempt_data = _get_login_attempts(username_lower)
     locked_until = attempt_data.get('locked_until')
     if locked_until:
-        try:
-            lock_time = datetime.fromisoformat(locked_until)
-            if now < lock_time:
-                remaining = int((lock_time - now).total_seconds())
-                return {'success': False, 'error': f'Konto zablokowane. Spróbuj ponownie za {remaining // 60 + 1} min.'}
-        except (ValueError, TypeError):
-            pass
+        remaining = locked_until - time.time()
+        if remaining > 0:
+            return {'success': False, 'error': f'Konto zablokowane. Spróbuj ponownie za {int(remaining) // 60 + 1} min.'}
 
     # Find user by username
     docs = db.collection('users').where('username_lower', '==', username_lower).limit(1).stream()
@@ -1056,16 +1051,14 @@ def get_hourly_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any
 
         for i, hour in enumerate(sorted_hours):
             occupancy, weekday = hours_data[hour]
-            
+
             if i == 0:
-                # First hour of the day - use raw value as entries
-                entries = occupancy
+                # Skip first hour — no previous reading to diff against
+                continue
             else:
                 prev_hour = sorted_hours[i - 1]
                 prev_occupancy, _ = hours_data[prev_hour]
-                # Entries = current reading - previous reading
                 entries = occupancy - prev_occupancy
-                # If negative (e.g., counter reset), set to 0
                 if entries < 0:
                     entries = 0
             
@@ -1340,11 +1333,11 @@ def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Op
         for i, hour in enumerate(sorted_hours):
             occupancy, weekday = hours_data[hour]
             if i == 0:
-                entries = occupancy
-            else:
-                prev_hour = sorted_hours[i - 1]
-                prev_occupancy, _ = hours_data[prev_hour]
-                entries = max(0, occupancy - prev_occupancy)
+                # Skip first hour — no previous reading to diff against
+                continue
+            prev_hour = sorted_hours[i - 1]
+            prev_occupancy, _ = hours_data[prev_hour]
+            entries = max(0, occupancy - prev_occupancy)
 
             daily_hourly_entries[date_str][hour] = (entries, weekday)
 
