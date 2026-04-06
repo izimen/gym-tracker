@@ -81,22 +81,7 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(workouts_bp)
 app.register_blueprint(analytics_bp)
 
-# Re-export for backward compatibility
 limiter = extensions.limiter
-ADMIN_SECRET = extensions.ADMIN_SECRET
-
-
-def get_current_user_id():
-    """Get user_id from server-side session. Returns None if not logged in."""
-    return session.get('user_id')
-
-
-def require_login():
-    """Return (user_id, None) if logged in, or (None, error_response) if not."""
-    uid = get_current_user_id()
-    if uid:
-        return uid, None
-    return None, (jsonify({'error': 'Not authenticated'}), 401)
 
 
 # =============================================================================
@@ -184,10 +169,14 @@ def fetch_entries_data():
     """Fetch current gym entries count. Uses atomic dict replacement for thread safety."""
     global entries_cache
 
+    if not GYM_URL or not DATA_URL:
+        entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': 'GYM_URL not configured'}
+        return
+
     try:
         gym_sess = get_gym_session()
         if not gym_sess:
-            entries_cache = {**entries_cache, 'status': 'error', 'error': 'Nie udało się zalogować'}
+            entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': 'Nie udało się zalogować'}
             return
 
         response = gym_sess.get(DATA_URL, timeout=REQUEST_TIMEOUT)
@@ -198,11 +187,11 @@ def fetch_entries_data():
             if gym_sess:
                 response = gym_sess.get(DATA_URL, timeout=REQUEST_TIMEOUT)
             else:
-                entries_cache = {**entries_cache, 'status': 'error', 'error': 'Sesja wygasła, ponowne logowanie nieudane'}
+                entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': 'Sesja wygasła, ponowne logowanie nieudane'}
                 return
 
         if response.status_code != 200:
-            entries_cache = {**entries_cache, 'status': 'error', 'error': f'Błąd HTTP: {response.status_code}'}
+            entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': f'Błąd HTTP: {response.status_code}'}
             return
 
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -233,13 +222,13 @@ def fetch_entries_data():
             save_to_firestore(entries_today)
         else:
             logger.warning("Could not find entry numbers. Page text sample: %s", page_text[:100])
-            entries_cache = {**entries_cache, 'status': 'error', 'error': 'Nie znaleziono danych o wejściach'}
+            entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': 'Nie znaleziono danych o wejściach'}
 
     except requests.Timeout:
-        entries_cache = {**entries_cache, 'status': 'error', 'error': 'Przekroczono limit czasu połączenia'}
+        entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': 'Przekroczono limit czasu połączenia'}
         logger.warning("Request timeout")
     except Exception as e:
-        entries_cache = {**entries_cache, 'status': 'error', 'error': str(e)}
+        entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': str(e)}
         logger.error("Error fetching data: %s", e)
 
 
@@ -315,7 +304,6 @@ def get_stats():
             result['history_count'] = database.get_history_count()
         except Exception as e:
             logger.error("Stats fetch error: %s", e)
-            app.logger.error(f"Stats fetch error: {e}")
             result['error'] = 'Failed to load stats'
 
     return jsonify(result)
@@ -396,7 +384,7 @@ def add_security_headers(response):
 
     csp = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-hashes' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "img-src 'self' data: https://fav.farm; "
         "font-src 'self' https://fonts.gstatic.com; "
