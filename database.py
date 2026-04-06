@@ -147,10 +147,16 @@ def validate_password(password: str) -> tuple:
     """
     if not password:
         return False, "Password is required"
-    if len(password) < 3:
-        return False, "Password must be at least 3 characters"
-    if len(password) > 20:
-        return False, "Password must be at most 20 characters"
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters"
+    if len(password) > 128:
+        return False, "Password must be at most 128 characters"
+    # Require at least one: digit, uppercase letter, or special character
+    has_digit = any(c.isdigit() for c in password)
+    has_upper = any(c.isupper() for c in password)
+    has_special = any(not c.isalnum() for c in password)
+    if not (has_digit or has_upper or has_special):
+        return False, "Password must contain at least one digit, uppercase letter, or special character"
     return True, None
 
 
@@ -231,11 +237,14 @@ def authenticate_user(username: str, password: str) -> dict:
         break
     
     if not user_doc:
-        return {'success': False, 'error': 'User not found'}
-    
+        # Dummy bcrypt check to prevent timing-based user enumeration (SEC-22)
+        _dummy_hash = '$2b$12$N8nDf0hp1fhteQ0BFO3FruehnobfLHO9r55zh4nl/aYUtjrXaEExi'
+        verify_password(password, _dummy_hash)
+        return {'success': False, 'error': 'Invalid username or password'}
+
     # Verify password
     if not verify_password(password, user_doc.get('password_hash', '')):
-        return {'success': False, 'error': 'Wrong password'}
+        return {'success': False, 'error': 'Invalid username or password'}
     
     return {
         'success': True,
