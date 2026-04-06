@@ -1011,3 +1011,219 @@
         .user-badge:hover {
             background: var(--bg-card-hover);
         }
+
+        /* Stats mini cards row */
+        .stats-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .stat-mini-card {
+            background: var(--bg-input);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .stat-mini-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .stat-mini-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* Daily averages chart */
+        .daily-avg-section {
+            margin-bottom: 20px;
+        }
+
+        .daily-avg-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .daily-avg-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 140px;
+            gap: 4px;
+            padding-top: 25px;
+        }
+
+        /* Best/worst times grid */
+        .times-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .times-card-best {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .times-card-worst {
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .times-card-title {
+            font-size: 0.75rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .times-card-best .times-card-title { color: var(--success); }
+        .times-card-worst .times-card-title { color: var(--danger); }
+
+        .times-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* New Year effect panel */
+        .new-year-panel {
+            margin-top: 16px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .new-year-title {
+            font-size: 0.85rem;
+            color: #a78bfa;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .new-year-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .new-year-stats {
+            flex: 1;
+            min-width: 220px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .new-year-stat-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .new-year-icon {
+            font-size: 1.1rem;
+            background: rgba(255,255,255,0.1);
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        .new-year-detail {
+            flex: 1;
+            min-width: 220px;
+            display: none;
+            border-left: 1px solid rgba(139, 92, 246, 0.2);
+            padding-left: 24px;
+        }
+
+        /* Heatmap section */
+        .heatmap-container {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 5px 0;
+        }
+
+        .heatmap-legend {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .heatmap-legend-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        /* Records grid */
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        /* Progression chart */
+        .progression-select {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .progression-chart {
+            height: 150px;
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            padding-top: 25px;
+        }
+
+        .loading-text {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            width: 100%;
+        }
+
+        .loading-text-sm {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Toast container */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
