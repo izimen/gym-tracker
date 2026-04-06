@@ -1297,7 +1297,11 @@ function renderComparison(data) {
 // ============================================
 async function downloadBackup() {
     try {
-        const response = await authFetch('/api/export/full');
+        const response = await fetch('/api/export/full', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (response.status === 401) {
+            showToast('Eksport wymaga uprawnień administratora', 'error');
+            return;
+        }
         const data = await response.json();
         downloadJSON(data, 'gym_tracker_backup.json');
     } catch (error) {
@@ -1308,7 +1312,11 @@ async function downloadBackup() {
 
 async function downloadWorkouts() {
     try {
-        const response = await authFetch('/api/export/workouts');
+        const response = await fetch('/api/export/workouts', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (response.status === 401) {
+            showToast('Eksport wymaga uprawnień administratora', 'error');
+            return;
+        }
         const data = await response.json();
         downloadJSON(data, 'workouts_backup.json');
     } catch (error) {
