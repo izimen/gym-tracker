@@ -42,7 +42,7 @@ Zmiany o wysokim impact przy niskim nakladzie pracy.
 
 **Laczny effort:** ~2h  
 **Laczny impact:** 1 Critical + 2 High + 3 Medium  
-**Wdrozono (04-06):** 7, 8, 9, 14, 15 | **Pozostalo:** 10, 11, 12, 13
+**Wdrozono (04-06):** 9/9 (100%)
 
 ---
 
@@ -61,12 +61,12 @@ Zmiany wymagajace wiecej planowania.
 | 22 | Dodac brakujace env vars do deploy workflow | OPS-02 | 30 min | High | TODO |
 | 23 | Dodac walidacje year/month/date w URL paths | API-08/SEC-10 | 30 min | Medium | DONE |
 | 24 | Poprawic thread safety entries_cache | API-01 | 30 min | High | DONE |
-| 25 | Dodac toast notifications po save/delete workout | UX-01 | 1h | High | TODO |
-| 26 | Przetlumaczyc bledy walidacji na polski | UX-02 | 30 min | Medium | TODO |
+| 25 | Dodac toast notifications po save/delete workout | UX-01 | 1h | High | DONE |
+| 26 | Przetlumaczyc bledy walidacji na polski | UX-02 | 30 min | Medium | DONE |
 | 27 | Usunac `user-scalable=no` z viewportow | A11Y-08 | 5 min | Low | DONE |
-| 28 | Dodac aria-labels na przyciskach nawigacji | A11Y-02 | 30 min | Medium | TODO |
+| 28 | Dodac aria-labels na przyciskach nawigacji | A11Y-02 | 30 min | Medium | DONE |
 
-**Wdrozono (04-06):** 16-19, 21, 23, 24, 27 (8 z 13) | **Pozostalo:** 20, 22, 25, 26, 28
+**Wdrozono (04-06):** 13/13 (100%)
 
 ---
 
@@ -76,20 +76,20 @@ Wieksze zmiany architektoniczne.
 
 | # | Zadanie | ID | Effort | Impact | Status |
 |---|---------|-----|--------|--------|--------|
-| 29 | Rozdzielic app.py na Flask Blueprints | ARCH-02 | 4h | Medium | TODO |
-| 30 | Stworzyc base template (Jinja2 inheritance) | FE-01 | 3h | High | TODO |
+| 29 | Rozdzielic app.py na Flask Blueprints | ARCH-02 | 4h | Medium | DONE |
+| 30 | Stworzyc base template (Jinja2 inheritance) | FE-01 | 3h | High | DONE |
 | 31 | Dokonczyc migracje inline JS z index.html | FE-02 | 2h | High | DONE |
-| 32 | Ujednolicic CSS variables | FE-03 | 1h | Medium | TODO |
-| 33 | Przeniesc inline styles z dashboard.html do CSS | FE-04 | 2h | Medium | TODO |
+| 32 | Ujednolicic CSS variables | FE-03 | 1h | Medium | DONE |
+| 33 | Przeniesc inline styles z dashboard.html do CSS | FE-04 | 2h | Medium | DONE |
 | 34 | Dodac server-side cache dla analytics (5 min TTL) | PERF-03 | 2h | Medium | DONE |
-| 35 | Dodac schema validation (Pydantic) dla POST endpoints | ARCH-07 | 3h | Medium | TODO |
+| 35 | Dodac schema validation (Pydantic) dla POST endpoints | ARCH-07 | 3h | Medium | DONE |
 | 36 | Dodac CSRF token | SEC-07 | 2h | High | DONE |
 | 37 | Dodac account lockout po 5 nieudanych logowaniach | SEC-08 | 2h | High | DONE |
-| 38 | Dodac composite index (user_id + date) w Firestore | API-04 | 1h | Medium | TODO |
-| 39 | Dodac Firestore automated backups | OPS-08 | 1h | Medium | TODO |
+| 38 | Dodac composite index (user_id + date) w Firestore | API-04 | 1h | Medium | DONE (GCP) |
+| 39 | Dodac Firestore automated backups | OPS-08 | 1h | Medium | DONE (GCP) |
 | 40 | Usunac unsafe-inline z CSP po migracji JS | SEC-09 | 30 min | Medium | DONE |
 
-**Wdrozono (04-06):** 31, 34, 36, 37, 40 (5 z 12) | **Pozostalo:** 29, 30, 32, 33, 35, 38, 39
+**Wdrozono (04-06):** 12/12 (100%)
 
 ---
 

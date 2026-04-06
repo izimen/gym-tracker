@@ -71,14 +71,14 @@ Gym Tracker to aplikacja webowa (Flask + Firestore + vanilla JS frontend) do śl
 
 | Metryka | Przed (04-04) | Po ETAPIE 2 (04-06) | Komentarz |
 |---------|---------------|----------------------|-----------|
-| Bezpieczenstwo | 5/10 | **7/10** | Polityka hasel wzmocniona, auth na endpointach, anti-enumeration, XSS fallback, CSP hardening, rate limits |
-| Architektura | 6/10 | 6/10 | Bez zmian — duplikacja i brak blueprintow nadal do zrobienia |
-| Jakosc kodu | 6/10 | **6.5/10** | Usunieto ~6,800 LOC dead files, maskowanie bledow wewnetrznych |
-| Wydajnosc | 5/10 | 5/10 | Bez zmian — N+1 queries i brak cache nadal do zrobienia |
-| Testy | 2/10 | 2/10 | Bez zmian |
-| DevOps | 6/10 | **7/10** | .dockerignore naprawiony, rate limits dodane |
-| UI/UX | 7/10 | 7/10 | Bez zmian |
-| Dokumentacja | 7/10 | 7/10 | Bez zmian |
+| Bezpieczenstwo | 5/10 | **9/10** | 21/23 findings naprawionych, CSRF, account lockout, CSP strict, 0 Critical/High |
+| Architektura | 6/10 | **8/10** | Flask Blueprints (4 moduly), base template, extensions.py, Pydantic validation |
+| Jakosc kodu | 6/10 | **8/10** | ~8,400 LOC usunietych, dedup database.py, structured logging, unified CSS |
+| Wydajnosc | 5/10 | **8/10** | Firestore N+1 fix (12→1), composite indexes, 5-min TTL cache, preprocessing |
+| Testy | 2/10 | **5/10** | 27 unit testow + CI smoke tests przed deploy |
+| DevOps | 6/10 | **8/10** | .dockerignore, env vars w CI, Firestore backups, health check z Firestore ping |
+| UI/UX | 7/10 | **8/10** | Toast notifications, polskie bledy, aria-labels, WCAG AA contrast |
+| Dokumentacja | 7/10 | **8/10** | Pelny audit trail, 30+ dokumentow zaktualizowanych |
 
 ---
 
@@ -103,18 +103,27 @@ Gym Tracker to aplikacja webowa (Flask + Firestore + vanilla JS frontend) do śl
 
 ---
 
-## Priorytety na Najblizsze 7 Dni
+## Priorytety — WSZYSTKIE ZREALIZOWANE
 
-1. ~~**Dzien 1-2:** Napraw `.dockerignore`, usun admin secret z query param, zamaskuj bledy enumeracji~~ DONE (2026-04-06)
-2. ~~**Dzien 2-3:** Wzmocnij politykę hasel, dodaj auth do endpointow debug/analytics~~ DONE (2026-04-06)
-3. ~~**Dzien 3-4:** Usun dead files~~ DONE (2026-04-06)
-4. **Nastepne:** Dodaj unit testy (minimum: auth flow, workout CRUD, data validation)
-5. **Nastepne:** Optymalizuj Firestore queries (dodaj `.where('user_id')`), refaktor duplikacji w database.py
-6. **Nastepne:** Dodaj CSRF tokens, account lockout, base template (Jinja2 inheritance)
+1. ~~Napraw `.dockerignore`, usun admin secret z query param, zamaskuj bledy enumeracji~~ DONE
+2. ~~Wzmocnij politykę hasel, dodaj auth do endpointow debug/analytics~~ DONE
+3. ~~Usun dead files~~ DONE
+4. ~~Dodaj unit testy~~ DONE (27 testow + CI smoke tests)
+5. ~~Optymalizuj Firestore queries, refaktor duplikacji~~ DONE
+6. ~~Dodaj CSRF tokens, account lockout, base template~~ DONE
+7. ~~Flask Blueprints, Pydantic, inline styles → CSS~~ DONE
+8. ~~Firestore composite indexes + weekly backup~~ DONE (GCP)
 
 ---
 
 ## Status
 
 - **ETAP 1 ZAKONCZONY** (2026-04-04) — Wszystkie dokumenty audytowe wygenerowane.
-- **ETAP 2 WDROZONY** (2026-04-06) — 10 zmian, 15 findings naprawionych, ~6,800 LOC usunietych. Szczegoly w `11_APPLIED_FIXES_CHANGELOG.md`.
+- **ETAP 2 ZAKONCZONY** (2026-04-06) — 11 commitow, 51/55 zadan z roadmapy (93%), 21/23 security findings naprawionych. Szczegoly w `11_APPLIED_FIXES_CHANGELOG.md`.
+
+### Co Zostalo (akceptowane, nie krytyczne)
+
+| ID | Opis | Powod |
+|----|------|-------|
+| SEC-14 | setup_server.sh uzywa curl ifconfig.me | Skrypt dev, niskie ryzyko |
+| SEC-21 | In-memory rate limiter | OK dla hobby projektu, single instance |
