@@ -252,4 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchData, 30000);
     setInterval(fetchStats, 60000);
     setInterval(fetchWorkoutStats, 120000);
+    setInterval(fetchBestHours, 300000);
+
+    // Clean up old service workers
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(r => r.unregister());
+        });
+    }
 });
