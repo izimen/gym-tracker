@@ -3,7 +3,7 @@
 **Pelny audyt 360 aplikacji Gym Tracker**  
 **Data:** 2026-04-04  
 **Metoda:** 10 agentow audytowych + 4 GSD-codebase-mapper + 6 GSD-phase-researcher  
-**Status:** ETAP 2 ZAKONCZONY (2026-04-06) — 51/55 zadan (93%), 21/23 security findings, 11 commitow, ~8,400 LOC usunietych
+**Status:** FULLY COMPLETE (2026-04-06) — 51/55 roadmap + 8 bugfix PRs (#29-36), 21/23 security findings, ~8,400 LOC usunietych. Verified: 16/16 endpoints PASS, 19/19 security headers PASS, 27/27 tests PASS.
 
 ---
 
@@ -22,7 +22,7 @@
 | 08 | [Tests QA](08_TESTS_QA_AUDIT.md) | Coverage, gaps, plan testow | 5 findings + checklist |
 | 09 | [DevOps CI/CD](09_DEVOPS_CICD_AUDIT.md) | Pipeline, Docker, monitoring | 10 findings |
 | 10 | [Files Documentation](10_FILES_DOCUMENTATION.md) | Tabela plikow, ryzyka, rekomendacje | - |
-| 11 | [Applied Fixes](11_APPLIED_FIXES_CHANGELOG.md) | Changelog — 10 zmian wdrozonych (ETAP 2) | 15 fixed |
+| 11 | [Applied Fixes](11_APPLIED_FIXES_CHANGELOG.md) | Changelog — 37 zmian (ETAP 2) + 8 PRs #29-36 | 15+ fixed |
 | 12 | [Recommended Patches](12_RECOMMENDED_PATCHES.md) | Patche wymagajace decyzji | 5 patchy |
 | 13 | [Roadmap](13_ROADMAP.md) | Plan: immediate/quick/sprint/strategic | 55 zadan |
 | 14 | [Tech Stack Research](14_TECH_STACK_RESEARCH.md) | Zbiorczy research technologii 2026 | 10 decyzji |

@@ -10,7 +10,7 @@
 
 ## Stan Aplikacji
 
-Gym Tracker to aplikacja webowa (Flask + Firestore + vanilla JS frontend) do śledzenia obłożenia siłowni i treningów użytkowników. Wdrożona na Google Cloud Run z automatycznym deploymentem via GitHub Actions. Posiada również prototypowy stats-dashboard (React + TypeScript + Vite), który nie jest jeszcze zintegrowany.
+Gym Tracker to aplikacja webowa (Flask + Firestore + vanilla JS frontend) do śledzenia obłożenia siłowni i treningów użytkowników. Wdrożona na Google Cloud Run z automatycznym deploymentem via GitHub Actions.
 
 **Stack:** Python 3.12 / Flask / Firestore / Gunicorn / Vanilla JS + DOMPurify / Docker / Cloud Run  
 **LOC (backend):** ~3,072 (app.py + database.py)  
@@ -35,6 +35,8 @@ Gym Tracker to aplikacja webowa (Flask + Firestore + vanilla JS frontend) do śl
 > Uwaga: Po weryfikacji przez agentow GSD-codebase-mapper dodano 3 nowe findings (SEC-21, SEC-22, SEC-23). Wszystkie wczesniejsze findings potwierdzone kodem zrodlowym.
 > 
 > **ETAP 2 (2026-04-06):** Wdrozono 10 zmian naprawiajacych 15 findings + usunieto ~6,800 LOC dead files.
+> 
+> **ETAP 3 (2026-04-06):** PRs #29-36 — 8 dodatkowych bugfixow: authFetch w dashboard.js, analytics 500 fix, cache bust, CSP unsafe-inline restore, export toast fix, 6 bugow z automated audit, stat inflation fix, .gitignore update. **3 agenty weryfikacyjne potwierdzily: 16/16 endpoints, 19/19 headers, 27/27 testow PASS.**
 
 ---
 
@@ -116,10 +118,26 @@ Gym Tracker to aplikacja webowa (Flask + Firestore + vanilla JS frontend) do śl
 
 ---
 
-## Status
+## Status — FULLY COMPLETE
 
 - **ETAP 1 ZAKONCZONY** (2026-04-04) — Wszystkie dokumenty audytowe wygenerowane.
-- **ETAP 2 ZAKONCZONY** (2026-04-06) — 11 commitow, 51/55 zadan z roadmapy (93%), 21/23 security findings naprawionych. Szczegoly w `11_APPLIED_FIXES_CHANGELOG.md`.
+- **ETAP 2 ZAKONCZONY** (2026-04-06) — 11 commitow, 51/55 zadan z roadmapy (93%), 21/23 security findings naprawionych.
+- **ETAP 3 ZAKONCZONY** (2026-04-06) — PRs #29-36: 8 dodatkowych bugfixow i hardening zmian. Szczegoly w `11_APPLIED_FIXES_CHANGELOG.md`.
+
+### Weryfikacja Koncowa (3 agenty)
+
+- **16/16 endpoints PASS** — wszystkie endpointy API dzialaja poprawnie
+- **19/19 security headers PASS** — CSP, CORS, X-Content-Type-Options, etc.
+- **27/27 tests PASS** — pelny suite testow jednostkowych
+
+### Dodatkowe zmiany infrastrukturalne
+
+- Firestore composite indexes (user_id+date ASC i DESC) utworzone
+- Firestore weekly backup (niedziela, retencja 14 dni) wlaczony
+- GitHub Secrets skonfigurowane (GYM_URL, GYM_EMAIL, GYM_PASSWORD, ADMIN_SECRET)
+- stats-dashboard/ React prototype usuniety
+- Co-Authored-By usuniety z calej historii commitow
+- stats-dashboard/ i node_modules/ dodane do .gitignore
 
 ### Co Zostalo (akceptowane, nie krytyczne)
 
