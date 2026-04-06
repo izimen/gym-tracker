@@ -110,8 +110,8 @@ class TestGymHours:
         from database import is_gym_open
         assert is_gym_open(0, 6)   # Monday 6am
         assert is_gym_open(0, 22)  # Monday 10pm
+        assert is_gym_open(0, 23)  # Monday 11pm (open until midnight)
         assert not is_gym_open(0, 5)   # Monday 5am
-        assert not is_gym_open(0, 23)  # Monday 11pm
 
     def test_weekend_open_hours(self):
         from database import is_gym_open
@@ -133,7 +133,7 @@ class TestCompleteDayDetection:
 
     def test_full_weekday_complete(self):
         from database import is_complete_day
-        data = {h: 10 + h for h in range(6, 23)}
+        data = {h: 10 + h for h in range(6, 24)}  # 6-23 inclusive
         assert is_complete_day(data, 0)
 
     def test_too_many_missing_hours_incomplete(self):
