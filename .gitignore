@@ -29,6 +29,10 @@ build/
 Thumbs.db
 *.log
 
+# Node
+node_modules/
+stats-dashboard/
+
 # Testing
 .pytest_cache/
 .coverage
