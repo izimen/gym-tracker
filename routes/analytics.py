@@ -5,19 +5,19 @@ from datetime import date as dt_date
 import re
 import secrets
 import database
-from extensions import FIRESTORE_ENABLED, ADMIN_SECRET, limiter, require_login
+import extensions
 
 analytics_bp = Blueprint('analytics', __name__)
 
 
 @analytics_bp.route('/api/analytics/weekly')
-@limiter.limit("30 per minute")
+@extensions.limiter.limit("30 per minute")
 def get_analytics_weekly():
     """Get weekly workout history for the last 12 weeks"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -30,16 +30,16 @@ def get_analytics_weekly():
 
 
 @analytics_bp.route('/api/analytics/heatmap/<int:year>')
-@limiter.limit("30 per minute")
+@extensions.limiter.limit("30 per minute")
 def get_analytics_heatmap(year):
     """Get yearly heatmap data"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     if not (2020 <= year <= 2100):
         return jsonify({'error': 'Invalid year'}), 400
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -52,13 +52,13 @@ def get_analytics_heatmap(year):
 
 
 @analytics_bp.route('/api/analytics/comparison')
-@limiter.limit("30 per minute")
+@extensions.limiter.limit("30 per minute")
 def get_analytics_comparison():
     """Get month-to-month comparison"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -71,13 +71,13 @@ def get_analytics_comparison():
 
 
 @analytics_bp.route('/api/analytics/best-hours')
-@limiter.limit("30 per minute")
+@extensions.limiter.limit("30 per minute")
 def get_analytics_best_hours():
     """Get best gym hours analysis"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -90,13 +90,13 @@ def get_analytics_best_hours():
 
 
 @analytics_bp.route('/api/analytics/extended')
-@limiter.limit("100 per hour")
+@extensions.limiter.limit("100 per hour")
 def get_analytics_extended():
     """Get extended occupancy statistics for the dashboard"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -109,13 +109,13 @@ def get_analytics_extended():
 
 
 @analytics_bp.route('/api/analytics/new-year')
-@limiter.limit("100 per hour")
+@extensions.limiter.limit("100 per hour")
 def get_new_year_stats():
     """Get New Year's resolution effect statistics"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -129,16 +129,16 @@ def get_new_year_stats():
 
 
 @analytics_bp.route('/api/analytics/completeness/<int:year>/<int:month>')
-@limiter.limit("30 per minute")
+@extensions.limiter.limit("30 per minute")
 def get_data_completeness(year, month):
     """Get data collection completeness status for each day of a month"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     if not (2020 <= year <= 2100) or not (1 <= month <= 12):
         return jsonify({'error': 'Invalid year or month'}), 400
 
-    user_id, err = require_login()
+    user_id, err = extensions.require_login()
     if err:
         return err
 
@@ -151,14 +151,14 @@ def get_data_completeness(year, month):
 
 
 @analytics_bp.route('/api/debug/day/<date_str>')
-@limiter.limit("10 per minute")
+@extensions.limiter.limit("10 per minute")
 def debug_day_data(date_str):
     """Debug endpoint to check raw hourly data for a specific day (admin only)"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     secret = request.headers.get('X-Admin-Secret') or ''
-    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
+    if not extensions.ADMIN_SECRET or not secrets.compare_digest(secret, extensions.ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
 
     if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):

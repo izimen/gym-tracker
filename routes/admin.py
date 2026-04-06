@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import secrets
 import pytz
 import database
-from extensions import FIRESTORE_ENABLED, ADMIN_SECRET, limiter
+import extensions
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -13,7 +13,7 @@ admin_bp = Blueprint('admin', __name__)
 def _check_admin():
     """Verify admin secret. Returns error response or None if authorized."""
     secret = request.headers.get('X-Admin-Secret') or ''
-    if not ADMIN_SECRET or not secrets.compare_digest(secret, ADMIN_SECRET):
+    if not extensions.ADMIN_SECRET or not secrets.compare_digest(secret, extensions.ADMIN_SECRET):
         return jsonify({'error': 'Unauthorized'}), 401
     return None
 
@@ -21,7 +21,7 @@ def _check_admin():
 @admin_bp.route('/api/admin/reset-password', methods=['POST'])
 def admin_reset_password():
     """Admin: Reset a user's password"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'success': False, 'error': 'Firestore not available'}), 503
 
     err = _check_admin()
@@ -46,7 +46,7 @@ def admin_reset_password():
 @admin_bp.route('/api/admin/users')
 def list_users():
     """Admin: List all users"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     err = _check_admin()
@@ -64,7 +64,7 @@ def list_users():
 @admin_bp.route('/api/admin/reset-hourly', methods=['DELETE'])
 def reset_hourly_data():
     """Reset hourly occupancy data - clears all records to start fresh"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     err = _check_admin()
@@ -86,7 +86,7 @@ def reset_hourly_data():
 @admin_bp.route('/api/admin/debug-weekday/<int:weekday>')
 def debug_weekday_data(weekday):
     """Debug: Analyze data for a specific weekday (0=Mon, 4=Fri, 6=Sun)"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     err = _check_admin()
@@ -144,10 +144,10 @@ def debug_weekday_data(weekday):
 
 
 @admin_bp.route('/api/export/workouts')
-@limiter.limit("5 per hour")
+@extensions.limiter.limit("5 per hour")
 def export_workouts():
     """Export all workouts as JSON (admin only)"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     err = _check_admin()
@@ -169,10 +169,10 @@ def export_workouts():
 
 
 @admin_bp.route('/api/export/full')
-@limiter.limit("5 per hour")
+@extensions.limiter.limit("5 per hour")
 def export_full():
     """Export full backup of all data (admin only)"""
-    if not FIRESTORE_ENABLED:
+    if not extensions.FIRESTORE_ENABLED:
         return jsonify({'error': 'Firestore not available'}), 503
 
     err = _check_admin()
