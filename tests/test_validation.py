@@ -143,5 +143,5 @@ class TestCompleteDayDetection:
 
     def test_consecutive_zeros_incomplete(self):
         from database import is_complete_day
-        data = {h: 0 if 10 <= h <= 14 else 20 for h in range(6, 23)}
+        data = {h: 0 if 10 <= h <= 14 else 20 for h in range(6, 24)}
         assert not is_complete_day(data, 0)

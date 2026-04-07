@@ -188,7 +188,7 @@ def debug_day_data(date_str):
         if weekday in (5, 6):
             expected_range = "8-19 (weekend)"
         else:
-            expected_range = "6-22 (weekday)"
+            expected_range = "6-23 (weekday)"
 
         return jsonify({
             'date': date_str,
