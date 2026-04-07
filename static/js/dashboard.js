@@ -285,10 +285,40 @@ async function fetchLiveCount() {
             if (statsLiveNow) {
                 statsLiveNow.textContent = data.entries_today;
             }
+            // Update deviation if we have cached stats
+            if (statsCache.data && statsCache.data.today_hour_avg) {
+                updateLiveDeviation(statsCache.data.today_hour_avg);
+            }
         }
     } catch (error) {
         console.error('Error fetching live count:', error);
     }
+}
+
+function updateLiveDeviation(avgForThisHour) {
+    const el = document.getElementById('liveDeviation');
+    if (!el) return;
+
+    const currentCount = parseInt(document.getElementById('liveCount').textContent, 10);
+    if (isNaN(currentCount) || !avgForThisHour || avgForThisHour === 0) {
+        el.style.display = 'none';
+        return;
+    }
+
+    const diff = currentCount - avgForThisHour;
+    const pct = Math.round((diff / avgForThisHour) * 100);
+
+    if (Math.abs(pct) < 5) {
+        el.textContent = 'norma';
+        el.style.color = 'var(--text-muted)';
+    } else if (pct < 0) {
+        el.textContent = `${Math.abs(pct)}% mniej`;
+        el.style.color = 'var(--success)';
+    } else {
+        el.textContent = `${pct}% więcej`;
+        el.style.color = 'var(--warning)';
+    }
+    el.style.display = 'block';
 }
 
 
@@ -835,6 +865,9 @@ function renderStatsFromData(data) {
 
     // Override with "Zamknięte" if gym is closed
     updateGymStatusUI();
+
+    // Update live deviation indicator in header
+    updateLiveDeviation(data.today_hour_avg);
 }
 
 // Helper function to show rate limit message in stats UI
