@@ -250,48 +250,6 @@
                     </div>
                 </div>
 
-                <!-- New Year Effect Card -->
-                <div id="newYearCard" class="new-year-panel">
-                    <div class="new-year-title">🎆 EFEKT NOWOROCZNY</div>
-
-                    <div class="new-year-content">
-                        <div class="new-year-stats">
-                            <div class="new-year-stat-row">
-                                <span class="new-year-icon">📈</span>
-                                <span id="newYearMainChange"
-                                    style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">--</span>
-                            </div>
-                            <div class="new-year-stat-row">
-                                <span class="new-year-icon">📅</span>
-                                <span id="newYearWeekday"
-                                    style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">--</span>
-                            </div>
-                            <div class="new-year-stat-row">
-                                <span class="new-year-icon">🏆</span>
-                                <span id="newYearPeak"
-                                    style="font-size: 0.8rem; color: var(--text-secondary);">--</span>
-                            </div>
-                        </div>
-
-                        <!-- RIGHT COLUMN: Weekly Trend -->
-                        <!-- Using display:none initially, JS toggles to block. 
-                             Since block layout works fine for vertical stacking, we don't need flex here. -->
-                        <div id="newYearTrend" class="new-year-detail">
-                            <div
-                                style="font-size: 0.75rem; color: #a78bfa; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-                                📊 Trend Tygodniowy
-                            </div>
-                            <div id="newYearWeeklyTrend"
-                                style="font-size: 0.85rem; color: var(--text-primary); margin-bottom: 8px; font-weight: 500; line-height: 1.5;">
-                                --</div>
-                            <div id="newYearDecay"
-                                style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; background: rgba(234, 179, 8, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(234, 179, 8, 0.2); width: fit-content;">
-                                <span>⚠️</span>
-                                <span id="newYearDecayText" style="color: var(--warning);">--</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Weekly Chart -->
@@ -451,5 +409,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="/static/js/dashboard.js?v=2.3" defer></script>
+    <script src="/static/js/dashboard.js?v=2.4" defer></script>
 {% endblock %}
