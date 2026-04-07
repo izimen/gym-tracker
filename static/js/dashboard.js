@@ -48,7 +48,6 @@ let completenessData = {};  // {date: {status: 'complete'|'partial'|'missing', .
 // CLIENT-SIDE CACHE (Rate Limit Prevention)
 // ============================================
 let statsCache = { data: null, timestamp: 0 };
-let newYearCache = { data: null, timestamp: 0 };
 const CACHE_TTL = 60000; // 60 seconds
 
 // ============================================
@@ -773,7 +772,6 @@ function updateGymStatusUI() {
 async function loadStatistics() {
     await Promise.all([
         fetchExtendedStats(),
-        fetchNewYearStats(),
         fetchWeeklyChart(),
         fetchYearlyHeatmap(),
         fetchComparison()
@@ -881,120 +879,6 @@ function showStatsErrorMessage() {
             el.appendChild(msg);
         }
     });
-}
-
-async function fetchNewYearStats() {
-    try {
-        const response = await authFetch('/api/analytics/new-year');
-        if (!response.ok) {
-            if (response.status === 429) {
-                console.warn('Rate limited, skipping new year stats');
-                // Show placeholder for rate limit
-                const card = document.getElementById('newYearCard');
-                if (card) {
-                    card.style.display = 'block';
-                    document.getElementById('newYearMainChange').textContent = 'Spróbuj za chwilę';
-                    document.getElementById('newYearMainChange').style.fontSize = '0.85rem';
-                    document.getElementById('newYearWeekday').textContent = 'Zbyt wiele żądań';
-                    document.getElementById('newYearPeak').textContent = '';
-                    document.getElementById('newYearTrend').style.display = 'none';
-                }
-                return;
-            }
-            throw new Error(`HTTP error: ${response.status}`);
-        }
-        const data = await response.json();
-
-        if (!data.has_data) {
-            // Show card with placeholder text (fallback if server doesn't send sample data)
-            document.getElementById('newYearCard').style.display = 'block';
-            document.getElementById('newYearMainChange').textContent = 'Zbieranie danych...';
-            document.getElementById('newYearMainChange').style.fontSize = '0.85rem';
-            document.getElementById('newYearWeekday').textContent = 'Porównanie pojawi się w styczniu';
-            document.getElementById('newYearPeak').textContent = data.reason || 'Brak wystarczających danych';
-
-            // Show right column with placeholder
-            document.getElementById('newYearTrend').style.display = 'block';
-            document.getElementById('newYearWeeklyTrend').textContent = 'Wykres dostępny po 7 stycznia';
-            document.getElementById('newYearWeeklyTrend').style.color = 'var(--text-muted)';
-            document.getElementById('newYearDecay').style.display = 'none';
-            return;
-        }
-
-        // Show the card
-        const card = document.getElementById('newYearCard');
-        card.style.display = 'block';
-
-        // Set title
-        const titleEl = document.querySelector('#newYearCard > div:first-child');
-        titleEl.innerHTML = '🎆 EFEKT NOWOROCZNY';
-
-        // Main percentage change
-        const change = data.overall_change;
-        const sign = change >= 0 ? '+' : '';
-        document.getElementById('newYearMainChange').textContent =
-            `${sign}${change}% więcej osób niż w grudniu`;
-        document.getElementById('newYearMainChange').style.fontSize = '0.9rem';
-
-        // Today's weekday comparison
-        const weekdayChange = data.current_weekday_change;
-        const weekdaySign = weekdayChange >= 0 ? '+' : '';
-        document.getElementById('newYearWeekday').textContent =
-            `Dzisiaj (${data.current_weekday_name}): ${weekdaySign}${weekdayChange}% vs śr. ${data.current_weekday_name.substring(0, 3)}. gru.`;
-
-        // Peak day (safer parsing)
-        if (data.january && data.january.peak_day) {
-            const peak = data.january.peak_day;
-            // peak.date is YYYY-MM-DD
-            const parts = peak.date.split('-');
-            const day = parseInt(parts[2], 10);
-            const monthIdx = parseInt(parts[1], 10) - 1;
-
-            const months = ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
-                'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'];
-
-            document.getElementById('newYearPeak').textContent =
-                `Szczyt: ${day} ${months[monthIdx]} (${peak.occupancy} osób)`;
-        }
-
-        // Weekly trend - show if we have at least 1 week of data
-        if (data.weekly_trend && data.weekly_trend.length >= 1) {
-            document.getElementById('newYearTrend').style.display = 'block';
-
-            // Build trend string: W1: +42% | W2: +38% ↓ | ...
-            const trendParts = data.weekly_trend.map((w, i) => {
-                const percentChange = Math.round(w.percent - 100 + data.overall_change);
-                const sign = percentChange >= 0 ? '+' : '';
-                const arrow = i > 0 && w.change < 0 ? ' ↓' : (i > 0 && w.change > 0 ? ' ↑' : '');
-                return `W${w.week}: ${sign}${percentChange}%${arrow}`;
-            });
-            document.getElementById('newYearWeeklyTrend').textContent = trendParts.join(' | ');
-            document.getElementById('newYearWeeklyTrend').style.color = 'var(--text-primary)';
-
-            // Decay rate - only show if we have at least 2 weeks
-            if (data.avg_weekly_decay !== 0 && data.weekly_trend.length >= 2) {
-                document.getElementById('newYearDecay').style.display = 'flex';
-                const decay = data.avg_weekly_decay;
-                const label = decay < 0 ? 'Spadek' : 'Wzrost';
-                const absValue = Math.abs(decay);
-                document.getElementById('newYearDecayText').textContent =
-                    `${label} ${absValue}%/tydzień`;
-            } else {
-                document.getElementById('newYearDecay').style.display = 'none';
-            }
-        } else {
-            document.getElementById('newYearTrend').style.display = 'none';
-        }
-
-    } catch (error) {
-        console.error('Error fetching new year stats:', error);
-        // Show placeholder on error
-        document.getElementById('newYearCard').style.display = 'block';
-        document.getElementById('newYearMainChange').textContent = 'Zbieranie danych...';
-        document.getElementById('newYearWeekday').textContent = 'Błąd pobierania danych';
-        document.getElementById('newYearPeak').textContent = '';
-        document.getElementById('newYearTrend').style.display = 'none';
-    }
 }
 
 function renderDailyChart(dailyAverages) {

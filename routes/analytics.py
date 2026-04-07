@@ -108,26 +108,6 @@ def get_analytics_extended():
         return jsonify({'error': 'Internal server error'}), 500
 
 
-@analytics_bp.route('/api/analytics/new-year')
-@extensions.limiter.limit("100 per hour")
-def get_new_year_stats():
-    """Get New Year's resolution effect statistics"""
-    if not extensions.FIRESTORE_ENABLED:
-        return jsonify({'error': 'Firestore not available'}), 503
-
-    user_id, err = extensions.require_login()
-    if err:
-        return err
-
-    try:
-        year = request.args.get('year', type=int)
-        data = database.get_new_year_effect(year)
-        return jsonify(data)
-    except Exception as e:
-        current_app.logger.error(f"Internal error: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
 @analytics_bp.route('/api/analytics/completeness/<int:year>/<int:month>')
 @extensions.limiter.limit("30 per minute")
 def get_data_completeness(year, month):
