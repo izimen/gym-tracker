@@ -748,7 +748,7 @@ function isGymOpen() {
 
     // Monday (1) to Friday (5)
     if (day >= 1 && day <= 5) {
-        return hour >= 6 && hour < 23;
+        return hour >= 6 && hour < 24;
     }
     // Saturday (6) and Sunday (0)
     else {
@@ -865,8 +865,20 @@ function showStatsErrorMessage() {
     const ids = ['statsAvgWeekday', 'statsWeekdayHour', 'statsAvgHour', 'statsLiveNow'];
     ids.forEach(id => {
         const el = document.getElementById(id);
-        if (el && el.textContent === 'Ładowanie...') {
+        if (el && (el.textContent === 'Ładowanie...' || el.textContent === '--')) {
             el.textContent = '--';
+        }
+    });
+
+    const chartIds = ['dailyChart', 'hourlyChart', 'bestTimesList', 'worstTimesList'];
+    chartIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.querySelector('.loading-text, .loading-text-sm')) {
+            el.textContent = '';
+            const msg = document.createElement('div');
+            msg.textContent = 'Błąd ładowania danych';
+            msg.style.cssText = 'text-align:center;width:100%;padding:20px;color:var(--text-muted);font-size:0.85rem;';
+            el.appendChild(msg);
         }
     });
 }
@@ -1041,7 +1053,7 @@ function renderHourlyChart(hourlyAverages) {
     container.innerHTML = '';
 
     const hours = [];
-    for (let h = 6; h <= 22; h++) hours.push(h);
+    for (let h = 6; h <= 23; h++) hours.push(h);
 
     const values = hours.map(h => hourlyAverages[h] || 0);
     const maxVal = Math.max(...values, 1);

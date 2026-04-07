@@ -934,16 +934,16 @@ def save_hourly_occupancy(occupancy_count: int):
     Only saves if it's a new hour (prevents duplicates within same hour)
     
     Gym hours:
-    - Weekdays (Mon-Fri): 6:00 - 23:00
+    - Weekdays (Mon-Fri): 6:00 - 24:00
     - Weekends (Sat-Sun): 8:00 - 20:00
     """
     db = get_db()
     tz = pytz.timezone('Europe/Warsaw')
     now = datetime.now(tz)
-    
+
     hour = now.hour
     weekday = now.weekday()
-    
+
     # Check if gym is open - don't save data outside opening hours
     if not is_gym_open(weekday, hour):
         return  # Gym closed, don't save
@@ -1025,12 +1025,12 @@ def get_hourly_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any
     Calculate average ENTRIES per hour of the day.
     Entries = difference between consecutive hourly readings.
     Uses data from the last N days.
-    
+
     Gym hours:
-    - Weekdays (Mon-Fri): 6:00 - 23:00
+    - Weekdays (Mon-Fri): 6:00 - 24:00
     - Weekends (Sat-Sun): 8:00 - 20:00
-    
-    Returns: {6: 12.5, 7: 18.3, ..., 22: 8.2}
+
+    Returns: {6: 12.5, 7: 18.3, ..., 23: 8.2}
     """
     if _preprocessed is not None:
         daily_hourly_data = _preprocessed
@@ -1041,7 +1041,7 @@ def get_hourly_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any
 
     # Calculate entries per hour (difference between consecutive readings)
     hourly_entries = {}
-    for h in range(6, 23):
+    for h in range(6, 24):
         hourly_entries[h] = []
 
     for date_str, hours_data in daily_hourly_data.items():
@@ -1083,7 +1083,7 @@ def get_data_completeness_for_month(year: int, month: int) -> dict:
         'YYYY-MM-DD': {
             'status': 'complete' | 'partial' | 'missing',
             'hours_collected': 12,
-            'hours_expected': 17,
+            'hours_expected': 18,
             'is_weekend': False
         }, ...
     }
@@ -1230,7 +1230,7 @@ def get_hourly_stats() -> dict:
     data_points = len(cached_data)
     
     # Estimate days with data
-    days_with_data = data_points // 17 if data_points > 0 else 0  # ~17 hours per day (6-22)
+    days_with_data = data_points // 18 if data_points > 0 else 0  # ~18 hours per day (6-23)
     
     result = {
         'hourly_averages': averages,
@@ -1313,7 +1313,7 @@ def get_week_ago_same_hour() -> Optional[dict]:
 def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> List[Dict[str, Any]]:
     """
     Get the N best or worst day+hour combinations by average entries.
-    Uses sliding 2-hour windows (6-8, 7-9, 8-10, ..., 21-23) for analysis.
+    Uses sliding 2-hour windows (6-8, 7-9, 8-10, ..., 22-24) for analysis.
     ascending=True returns lowest averages (best times), False returns highest (worst times).
     """
     if _preprocessed is not None:
@@ -1350,8 +1350,8 @@ def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Op
             continue
         _, weekday = hourly_data[first_hour]
 
-        for start_hour in range(6, 22):
-            end_hour = min(start_hour + 2, 23)
+        for start_hour in range(6, 23):
+            end_hour = min(start_hour + 2, 24)
 
             window_sum = 0
             hours_in_window = 0
@@ -1372,12 +1372,12 @@ def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Op
     for (weekday, start_hour), values in window_data.items():
         if values:
             if weekday in (5, 6):
-                end_hour = min(start_hour + 2, 23)
+                end_hour = min(start_hour + 2, 24)
                 if start_hour < 8 or end_hour > 20:
                     continue
 
             avg = sum(values) / len(values)
-            end_hour = min(start_hour + 2, 23)
+            end_hour = min(start_hour + 2, 24)
             averages.append({
                 'weekday': weekday,
                 'weekday_name': WEEKDAY_NAMES_SHORT[weekday],
