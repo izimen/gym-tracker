@@ -76,7 +76,7 @@ python -m pytest tests/ -v
 
 ## Audit Status
 
-Full 360 audit completed and implemented. See `AUDIT/` for 16 documents. Key stats:
+Full 360 audit completed and implemented. See `docs/audit/` for 16 documents. Key stats:
 - 21/23 security findings fixed (0 Critical, 0 High)
 - 27 unit tests + CI smoke tests
 - 3 verification agents confirmed: 16/16 endpoints, 19/19 headers, 27/27 tests PASS

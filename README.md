@@ -12,10 +12,9 @@ A self-hosted gym tracker that scrapes occupancy data from eFitness-powered gym 
 ## ✨ Features
 
 ### 📊 Gym Occupancy Monitoring
-- **Live counter** - Current number of people at the gym
+- **Live counter** - Current number of people at the gym, with live deviation indicator (`X% mniej/więcej` vs historical average)
 - **Statistics** - Averages by day of week, hour, and trends
 - **Best/Worst Hours** - Analysis of optimal training times
-- **New Year Effect** - January vs December comparison
 
 ### 📅 Workout Calendar
 - **Body part tracking** - Customize categories for your routine
@@ -92,7 +91,7 @@ Edit `database.py` and modify `GYM_HOURS` to match your gym's schedule:
 
 ```python
 GYM_HOURS = {
-    'weekday': (6, 22),  # Monday-Friday: 6:00 - 23:00
+    'weekday': (6, 23),  # Monday-Friday: 6:00 - 24:00 (last slot 23:00-00:00)
     'weekend': (8, 19),  # Saturday-Sunday: 8:00 - 20:00
 }
 ```
@@ -182,18 +181,35 @@ Contributions are welcome! Here's how to get started:
 
 ```
 gym-tracker/
-├── app.py              # Flask application
-├── database.py         # Firestore operations
+├── app.py                       # Flask app: pages, scraper, security headers, CSRF
+├── extensions.py                # Shared: limiter, FIRESTORE_ENABLED, auth helpers
+├── database.py                  # Firestore data layer, analytics, account lockout
+├── routes/
+│   ├── auth.py                  # register, login, logout, session
+│   ├── admin.py                 # user mgmt, data reset, debug, export
+│   ├── workouts.py              # CRUD, month, dashboard, strength, progression
+│   └── analytics.py             # weekly, heatmap, comparison, best-hours
 ├── templates/
-│   ├── dashboard.html  # Main dashboard
-│   ├── calendar.html   # Workout calendar
-│   └── index.html      # Legacy view
+│   ├── base.html                # Shared head, fonts, CSS vars, DOMPurify
+│   ├── dashboard.html           # Main dashboard (extends base)
+│   ├── calendar.html            # Standalone calendar (extends base)
+│   └── index.html               # Legacy page (extends base)
+├── static/
+│   ├── css/                     # dashboard.css, calendar.css, home.css
+│   └── js/                      # dashboard.js, calendar.js, home.js
+├── tests/                       # pytest unit tests (27 tests)
+├── scripts/security/            # scan_secrets.sh, validate_env.sh, security_audit.sh
+├── docs/
+│   ├── audit/                   # 16 audit documents (360 security/architecture review)
+│   └── FEATURE-IDEAS.md         # 13-feature roadmap
 ├── .github/workflows/
-│   ├── deploy.yml      # Auto-deploy to Cloud Run
-│   └── security-scan.yml # Security scanning
+│   ├── deploy.yml               # Auto-deploy to Cloud Run
+│   └── security-scan.yml        # Security scanning
 ├── Dockerfile
 ├── requirements.txt
+├── CLAUDE.md                    # Project instructions for Claude Code
 ├── LICENSE
+├── README.md
 └── SECURITY.md
 ```
 

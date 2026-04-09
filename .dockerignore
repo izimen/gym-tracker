@@ -9,8 +9,6 @@ venv
 .venv
 .git
 .gitignore
-uruchom.bat
-setup_server.sh
 
 # Sensitive files - NEVER include in Docker image
 .env
@@ -23,10 +21,6 @@ setup_server.sh
 .planning/
 
 # Non-production content
-design-showcase/
-AUDIT/
+docs/
 tests/
 scripts/
-stats-dashboard/
-dashboard_old.html
-response.html
