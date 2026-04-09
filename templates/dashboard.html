@@ -101,8 +101,7 @@
                 <div class="live-dot"></div>
                 <div style="display: flex; flex-direction: column; align-items: center;">
                     <span class="live-count" id="liveCount">--</span>
-                    <span class="live-label">osób dzisiaj</span>
-                    <span id="liveDeviation" style="font-size: 0.6rem; margin-top: 2px; display: none;"></span>
+                    <span class="live-label" id="liveLabel">osób dzisiaj</span>
                 </div>
             </div>
             <div class="user-badge" id="userBadge" onclick="logout()" role="button" aria-label="Wyloguj się" tabindex="0">👤 ---</div>
@@ -214,7 +213,7 @@
                 <div class="hourly-chart-container">
                     <div class="hourly-chart-header">
                         <div class="hourly-chart-title">
-                            ⏰ Średnia wejść na godzinę (6-23)
+                            ⏰ Średnia wejść na godzinę (6-24)
                         </div>
                         <div class="hourly-chart-legend">
                             <div class="legend-item-chart">
@@ -412,5 +411,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="/static/js/dashboard.js?v=2.5" defer></script>
+    <script src="/static/js/dashboard.js?v=2.6" defer></script>
 {% endblock %}

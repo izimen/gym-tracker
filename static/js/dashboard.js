@@ -296,12 +296,13 @@ async function fetchLiveCount() {
 }
 
 function updateLiveDeviation(avgForThisHour) {
-    const el = document.getElementById('liveDeviation');
-    if (!el) return;
+    const labelEl = document.getElementById('liveLabel');
+    if (!labelEl) return;
 
     const currentCount = parseInt(document.getElementById('liveCount').textContent, 10);
     if (isNaN(currentCount) || !avgForThisHour || avgForThisHour === 0) {
-        el.style.display = 'none';
+        labelEl.textContent = 'osób dzisiaj';
+        labelEl.style.color = '';
         return;
     }
 
@@ -309,16 +310,15 @@ function updateLiveDeviation(avgForThisHour) {
     const pct = Math.round((diff / avgForThisHour) * 100);
 
     if (Math.abs(pct) < 5) {
-        el.textContent = 'norma';
-        el.style.color = 'var(--text-muted)';
+        labelEl.textContent = 'osób dzisiaj';
+        labelEl.style.color = '';
     } else if (pct < 0) {
-        el.textContent = `${Math.abs(pct)}% mniej`;
-        el.style.color = 'var(--success)';
+        labelEl.textContent = `${Math.abs(pct)}% mniej`;
+        labelEl.style.color = 'var(--success)';
     } else {
-        el.textContent = `${pct}% więcej`;
-        el.style.color = 'var(--warning)';
+        labelEl.textContent = `${pct}% więcej`;
+        labelEl.style.color = 'var(--warning)';
     }
-    el.style.display = 'block';
 }
 
 
