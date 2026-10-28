@@ -1,6 +1,6 @@
 """Authentication routes: register, login, logout, session check."""
 
-from flask import Blueprint, jsonify, request, session, current_app
+from flask import Blueprint, jsonify, request, session
 import database
 import extensions
 
