@@ -3,7 +3,7 @@ CubeFitness Gym Entries Tracker
 Backend server that scrapes gym entry data and serves it via API
 """
 
-from flask import Flask, jsonify, render_template, request, redirect, session
+from flask import Flask, jsonify, render_template, request, redirect
 from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
@@ -104,6 +104,7 @@ if not GYM_EMAIL or not GYM_PASSWORD:
 REQUEST_TIMEOUT = 15
 REFRESH_COOLDOWN = 30
 last_refresh_time = 0
+last_fetch_attempt = 0.0
 refresh_lock = threading.Lock()
 
 # Cache for entries data — uses atomic dict replacement for thread safety
@@ -165,9 +166,32 @@ def save_to_firestore(entries_count: int):
             logger.error("Firestore save error: %s", e)
 
 
+ENTRIES_REGEX = re.compile(r'Aktualnie\s+w\s+klubie\s*(\d+)\s*/\s*\d+', re.IGNORECASE)
+FALLBACK_REGEX = re.compile(r'(\d+)\s*/\s*(\d+)')
+
+
+def parse_entries_count(html: str):
+    """Extract today's entries count from the eFitness 'Na terenie klubu' page.
+
+    Returns (entries_today or None, whitespace-collapsed page text).
+    """
+    page_text = ' '.join(BeautifulSoup(html, 'html.parser').get_text().split())
+
+    match = ENTRIES_REGEX.search(page_text)
+    if match:
+        return int(match.group(1)), page_text
+
+    for entries, max_c in FALLBACK_REGEX.findall(page_text):
+        if int(max_c) > 50:
+            return int(entries), page_text
+    return None, page_text
+
+
 def fetch_entries_data():
     """Fetch current gym entries count. Uses atomic dict replacement for thread safety."""
-    global entries_cache
+    global entries_cache, last_fetch_attempt
+
+    last_fetch_attempt = time.time()
 
     if not GYM_URL or not DATA_URL:
         entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': 'GYM_URL not configured'}
@@ -194,20 +218,7 @@ def fetch_entries_data():
             entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': f'Błąd HTTP: {response.status_code}'}
             return
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-        page_text = soup.get_text()
-
-        match = re.search(r'Aktualnie\s+w\s+klubie\s*(\d+)\s*/\s*\d+', page_text, re.IGNORECASE)
-        entries_today = None
-
-        if match:
-            entries_today = int(match.group(1))
-        else:
-            numbers = re.findall(r'(\d+)\s*/\s*(\d+)', page_text)
-            for entries, max_c in numbers:
-                if int(max_c) > 50:
-                    entries_today = int(entries)
-                    break
+        entries_today, page_text = parse_entries_count(response.text)
 
         if entries_today is not None:
             tz = pytz.timezone('Europe/Warsaw')
@@ -221,14 +232,14 @@ def fetch_entries_data():
             logger.info("Entries today: %d (updated %s)", entries_today, updated_at)
             save_to_firestore(entries_today)
         else:
-            logger.warning("Could not find entry numbers. Page text sample: %s", page_text[:100])
+            logger.warning("Could not find entry numbers. Page text sample: %s", page_text[:200])
             entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': 'Nie znaleziono danych o wejściach'}
 
     except requests.Timeout:
         entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': 'Przekroczono limit czasu połączenia'}
         logger.warning("Request timeout")
     except Exception as e:
-        entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': str(e)}
+        entries_cache = {'entries_today': 0, 'last_updated': None, 'status': 'error', 'error': 'Błąd pobierania danych'}
         logger.error("Error fetching data: %s", e)
 
 
@@ -265,7 +276,10 @@ def legacy():
 def get_occupancy():
     """API endpoint to get current entries (legacy endpoint name)"""
     cache = entries_cache
-    if cache.get('status') == 'initializing' or cache.get('last_updated') is None:
+    # On-demand fetch when there is no data yet, but at most once per REFRESH_COOLDOWN:
+    # while the source is failing, every page load would otherwise log in to the gym portal again.
+    no_data = cache.get('status') == 'initializing' or cache.get('last_updated') is None
+    if no_data and time.time() - last_fetch_attempt >= REFRESH_COOLDOWN:
         fetch_entries_data()
         cache = entries_cache
     return jsonify(cache)
@@ -343,8 +357,8 @@ def health():
             db.collection('daily_entries').limit(1).get()
             result['firestore'] = True
         except Exception as e:
+            logger.error("Health check Firestore error: %s", e)
             result['status'] = 'degraded'
-            result['firestore_error'] = str(e)
     return jsonify(result)
 
 
