@@ -3,7 +3,6 @@
 from flask import session, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import os
 
 # These get set by app.py during initialization
 FIRESTORE_ENABLED = False

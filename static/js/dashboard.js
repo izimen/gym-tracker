@@ -277,6 +277,24 @@ async function fetchLiveCount() {
             throw new Error(`HTTP error: ${response.status}`);
         }
         const data = await response.json();
+        const liveDot = document.querySelector('.live-counter .live-dot');
+        // Scraper failed: don't present the placeholder 0 as a live reading
+        if (data.status === 'error') {
+            document.getElementById('liveCount').textContent = '--';
+            if (liveDot) {
+                liveDot.classList.add('offline');
+                liveDot.title = data.error || 'Brak danych';
+            }
+            const deviation = document.getElementById('liveDeviation');
+            if (deviation) deviation.style.display = 'none';
+            const statsLiveNow = document.getElementById('statsLiveNow');
+            if (statsLiveNow && isGymOpen()) statsLiveNow.textContent = '--';
+            return;
+        }
+        if (liveDot) {
+            liveDot.classList.remove('offline');
+            liveDot.title = '';
+        }
         // Display count even if status is 'initializing' - show what we have
         if (data.entries_today !== undefined && data.entries_today !== null) {
             document.getElementById('liveCount').textContent = data.entries_today;
