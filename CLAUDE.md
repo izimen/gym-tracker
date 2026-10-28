@@ -73,12 +73,14 @@ python -m pytest tests/ -v
 - **Region:** europe-central2
 - **Firestore indexes:** composite (user_id+date ASC, user_id+date DESC) on `workouts`
 - **Backups:** weekly (Sunday), 14-day retention
+- **Billing account:** 01F7FF-EE2A00-817F1D (old one closed → outage 2026-08-03…10-29)
+- **Ops / revival notes:** `docs/OPERATIONS.md`
 
 ## Audit Status
 
 Full 360 audit completed and implemented. See `AUDIT/` for 16 documents. Key stats:
 - 21/23 security findings fixed (0 Critical, 0 High)
-- 27 unit tests + CI smoke tests
+- 35 unit tests (incl. `tests/test_scraper.py`) + CI smoke tests
 - 3 verification agents confirmed: 16/16 endpoints, 19/19 headers, 27/27 tests PASS
 
 ## Do NOT
