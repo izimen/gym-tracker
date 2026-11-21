@@ -88,7 +88,7 @@
             color: var(--text-muted);
         }
     </style>
-    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css?v=2.6">
 {% endblock %}
 
 {% block body %}
@@ -186,6 +186,7 @@
             <!-- Extended Occupancy Stats -->
             <div class="card">
                 <div class="card-title">📊 Statystyki obłożenia</div>
+                <div id="statsArchiveInfo" class="archive-info" style="display: none;"></div>
 
                 <!-- Quick stats row -->
                 <div class="stats-row">
@@ -203,7 +204,7 @@
                     </div>
                     <div class="stat-mini-card">
                         <div class="stat-mini-value" id="statsLiveNow">--</div>
-                        <div class="stat-mini-label">Teraz</div>
+                        <div class="stat-mini-label" id="statsLiveNowLabel">Teraz</div>
                     </div>
                 </div>
 
@@ -417,5 +418,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="/static/js/dashboard.js?v=2.5" defer></script>
+    <script src="/static/js/dashboard.js?v=2.6" defer></script>
 {% endblock %}

@@ -101,6 +101,17 @@ if not GYM_EMAIL or not GYM_PASSWORD:
     logger.warning("GYM_EMAIL and GYM_PASSWORD environment variables are not set!")
     logger.warning("The application will not be able to fetch gym data.")
 
+# The club removed the live counter from the eFitness page (checked 2026-11-21), so live
+# collection is off by default and the app shows the archive (2025-12-09 → 2026-08-03).
+# Set SCRAPER_ENABLED=1 to turn the scraper back on.
+SCRAPER_ENABLED = os.environ.get('SCRAPER_ENABLED', '0') == '1'
+ARCHIVED_CACHE = {
+    'entries_today': None,
+    'last_updated': None,
+    'status': 'archived',
+    'error': None
+}
+
 REQUEST_TIMEOUT = 15
 REFRESH_COOLDOWN = 30
 last_refresh_time = 0
@@ -250,9 +261,13 @@ def background_updater():
         time.sleep(180)
 
 
-# Start background updater
-updater_thread = threading.Thread(target=background_updater, daemon=True)
-updater_thread.start()
+# Start background updater (only when live collection is enabled)
+if SCRAPER_ENABLED:
+    updater_thread = threading.Thread(target=background_updater, daemon=True)
+    updater_thread.start()
+else:
+    entries_cache = ARCHIVED_CACHE
+    logger.info("Live scraper disabled (SCRAPER_ENABLED != 1) — archive mode")
 
 
 # =============================================================================
@@ -275,6 +290,8 @@ def legacy():
 @limiter.limit("200 per hour")
 def get_occupancy():
     """API endpoint to get current entries (legacy endpoint name)"""
+    if not SCRAPER_ENABLED:
+        return jsonify(ARCHIVED_CACHE)
     cache = entries_cache
     # On-demand fetch when there is no data yet, but at most once per REFRESH_COOLDOWN:
     # while the source is failing, every page load would otherwise log in to the gym portal again.
@@ -298,7 +315,7 @@ def get_stats():
     """API endpoint to get historical statistics"""
     cache = entries_cache
     result = {
-        'entries_today': cache.get('entries_today', 0),
+        'entries_today': cache.get('entries_today'),
         'week_ago': None,
         'week_ago_date': None,
         'average_for_weekday': None,
@@ -327,6 +344,9 @@ def get_stats():
 def refresh_data():
     """Force refresh entries data with rate limiting"""
     global last_refresh_time
+
+    if not SCRAPER_ENABLED:
+        return jsonify(ARCHIVED_CACHE)
 
     with refresh_lock:
         current_time = time.time()
@@ -424,6 +444,7 @@ def add_security_headers(response):
 
 if __name__ == '__main__':
     logger.info("Starting CubeFitness Entries Tracker...")
-    fetch_entries_data()
+    if SCRAPER_ENABLED:
+        fetch_entries_data()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

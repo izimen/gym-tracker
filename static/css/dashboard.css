@@ -1176,3 +1176,9 @@
             gap: 8px;
             pointer-events: none;
         }
+
+        .archive-info {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin: -8px 0 14px;
+        }
