@@ -253,8 +253,8 @@ async function startApp() {
     renderCalendar();
     renderLegend();
 
-    // Auto-refresh live count
-    setInterval(fetchLiveCount, 60000);
+    // Auto-refresh live count (not needed in archive mode)
+    liveCountTimer = setInterval(fetchLiveCount, 60000);
 }
 
 async function init() {
@@ -266,6 +266,31 @@ async function init() {
 // ============================================
 // LIVE COUNTER
 // ============================================
+let liveCountTimer = null;
+let archiveMode = false;
+
+function showArchiveHeader() {
+    archiveMode = true;
+    if (liveCountTimer) {
+        clearInterval(liveCountTimer);
+        liveCountTimer = null;
+    }
+    const count = document.getElementById('liveCount');
+    count.textContent = 'Archiwum';
+    count.style.fontSize = '0.95rem';
+    const label = document.querySelector('.live-counter .live-label');
+    if (label) label.textContent = 'dane archiwalne';
+    const liveDot = document.querySelector('.live-counter .live-dot');
+    if (liveDot) {
+        liveDot.classList.add('offline');
+        liveDot.title = 'Licznik na żywo został wyłączony przez klub — pokazujemy dane archiwalne';
+    }
+    const deviation = document.getElementById('liveDeviation');
+    if (deviation) deviation.style.display = 'none';
+    // Stats may have rendered before we knew we're in archive mode
+    if (statsCache.data) renderArchiveInfo(statsCache.data.archive);
+}
+
 async function fetchLiveCount() {
     try {
         const response = await fetch('/api/occupancy');
@@ -277,6 +302,10 @@ async function fetchLiveCount() {
             throw new Error(`HTTP error: ${response.status}`);
         }
         const data = await response.json();
+        if (data.status === 'archived') {
+            showArchiveHeader();
+            return;
+        }
         const liveDot = document.querySelector('.live-counter .live-dot');
         // Scraper failed: don't present the placeholder 0 as a live reading
         if (data.status === 'error') {
@@ -316,6 +345,10 @@ async function fetchLiveCount() {
 function updateLiveDeviation(avgForThisHour) {
     const el = document.getElementById('liveDeviation');
     if (!el) return;
+    if (archiveMode) {
+        el.style.display = 'none';
+        return;
+    }
 
     const currentCount = parseInt(document.getElementById('liveCount').textContent, 10);
     if (isNaN(currentCount) || !avgForThisHour || avgForThisHour === 0) {
@@ -805,7 +838,10 @@ function isGymOpen() {
 
 function updateGymStatusUI() {
     if (!isGymOpen()) {
-        const ids = ['statsAvgWeekday', 'statsWeekdayHour', 'statsAvgHour', 'statsLiveNow'];
+        // Weekday average and archive day count stay meaningful when the gym is closed
+        const ids = archiveMode
+            ? ['statsWeekdayHour', 'statsAvgHour']
+            : ['statsAvgWeekday', 'statsWeekdayHour', 'statsAvgHour', 'statsLiveNow'];
         ids.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -876,6 +912,8 @@ function renderStatsFromData(data) {
     document.getElementById('statsAvgHour').textContent =
         data.current_hour_avg ? Math.round(data.current_hour_avg) : '--';
 
+    renderArchiveInfo(data.archive);
+
     // Render charts
     renderDailyChart(data.daily_averages || {});
     renderHourlyChart(data.hourly_averages || {});
@@ -886,6 +924,28 @@ function renderStatsFromData(data) {
 
     // Update live deviation indicator in header
     updateLiveDeviation(data.today_hour_avg);
+}
+
+function formatPlDate(isoDate) {
+    const [y, m, d] = isoDate.split('-');
+    return `${parseInt(d, 10)}.${m}.${y}`;
+}
+
+// Archive mode: show the date range the averages come from, and the day count instead of "Teraz"
+function renderArchiveInfo(archive) {
+    const info = document.getElementById('statsArchiveInfo');
+    if (!archiveMode || !archive || !info) {
+        if (info) info.style.display = 'none';
+        return;
+    }
+    info.textContent = `📦 Dane archiwalne: ${formatPlDate(archive.from)} – ${formatPlDate(archive.to)} ` +
+        `(średnie z ${archive.complete_days} pełnych dni)`;
+    info.style.display = 'block';
+    const value = document.getElementById('statsLiveNow');
+    value.textContent = archive.days;
+    value.style.fontSize = '';
+    value.style.color = '';
+    document.getElementById('statsLiveNowLabel').textContent = 'Dni w archiwum';
 }
 
 // Helper function to show rate limit message in stats UI

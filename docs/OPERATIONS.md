@@ -10,7 +10,7 @@ Live state and how to keep it running. Secret values are never written here.
 | GCP project | `gym-tracker-480502`, region `europe-central2` |
 | Billing account | `01F7FF-EE2A00-817F1D` (the old `015E78-5F4016-A73C41` is closed) |
 | Database | Firestore (default database) in the same project |
-| Scraper | Cloud Scheduler `gym-data-collector`, every 10 min, 06:00–22:59 Europe/Warsaw |
+| Scraper | **Off** (archive mode, see below). Cloud Scheduler `gym-data-collector` is paused |
 | Deploy | GitHub Actions on merge to `main` (`main` requires a PR) |
 
 The admin account is `admin`; its password comes from the `ADMIN_PASSWORD` env var on the Cloud Run
@@ -33,9 +33,22 @@ service (read it with `gcloud run services describe gym-tracker --project gym-tr
   header shows `--` and a grey dot when the scraper fails instead of a fake live `0`. 35 tests.
 - **GitHub** — the Security Scan workflow had been auto-disabled for inactivity; re-enabled.
 
+## Archive mode (2026-11-21)
+
+The club removed the live counter from `/na-terenie-klubu` (the page still loads after login, but the
+widget is gone; the scraper never succeeded after the 2026-10-29 revival). There will be no new source,
+so the app is now an archive:
+
+- `SCRAPER_ENABLED` env var (default off): no background scraper thread, `/api/occupancy` and
+  `/api/refresh` return `{"status": "archived"}` without logging in to eFitness.
+- Cloud Scheduler `gym-data-collector` paused
+  (`gcloud scheduler jobs resume gym-data-collector --project gym-tracker-480502 --location europe-central2` to undo).
+- Occupancy statistics use the whole archive (hourly data 2025-12-11 → 2026-08-03, 222 complete days)
+  instead of the last 30 days. The header shows "Archiwum"; the stats tab shows the date range and the day count.
+- Workouts (calendar, strength) still work as before.
+
 ## If it breaks again
 
 - Header shows `--` during opening hours and logs say `Could not find entry numbers`: the eFitness
   page changed — update `parse_entries_count()` in `app.py` (tests in `tests/test_scraper.py`).
-- Statistics tab says "Zbieranie danych…": it averages the last 30 days; it fills in after collection resumes.
 - **gcloud**: always pass `--project gym-tracker-480502`.

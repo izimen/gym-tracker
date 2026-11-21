@@ -76,6 +76,7 @@ class TestOccupancyThrottle:
             app_module.entries_cache = {'entries_today': 0, 'last_updated': None,
                                         'status': 'error', 'error': 'Nie znaleziono danych o wejściach'}
 
+        monkeypatch.setattr(app_module, 'SCRAPER_ENABLED', True)
         monkeypatch.setattr(app_module, 'fetch_entries_data', fake_fetch)
         monkeypatch.setattr(app_module, 'last_fetch_attempt', 0.0)
         monkeypatch.setattr(app_module, 'entries_cache',
@@ -111,3 +112,28 @@ class TestOccupancyThrottle:
         REAL_FETCH()
         assert app_module.entries_cache['status'] == 'error'
         assert 'secret' not in app_module.entries_cache['error']
+
+
+class TestArchiveMode:
+    @pytest.fixture
+    def client(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(app_module, 'SCRAPER_ENABLED', False)
+        monkeypatch.setattr(app_module, 'fetch_entries_data', lambda: calls.append(1))
+        app_module.extensions.limiter.enabled = False
+        yield app_module.app.test_client(), calls
+        app_module.extensions.limiter.enabled = True
+
+    def test_occupancy_returns_archived_without_scraping(self, client):
+        c, calls = client
+        r = c.get('/api/occupancy')
+        assert r.status_code == 200
+        assert r.get_json()['status'] == 'archived'
+        assert calls == []
+
+    def test_refresh_does_not_scrape(self, client):
+        c, calls = client
+        r = c.get('/api/refresh')
+        assert r.status_code == 200
+        assert r.get_json()['status'] == 'archived'
+        assert calls == []

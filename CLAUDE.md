@@ -40,6 +40,7 @@ templates/
 - **CSRF check** on all POST/PUT/DELETE to `/api/*` — requires `X-Requested-With` header
 - **Error responses** use generic messages (`Internal server error`), details logged server-side with `logger.error()`
 - **entries_cache** uses atomic dict replacement (full new dict, never `{**old, ...}`)
+- **Archive mode:** live counter removed by the club (2026-11); scraper off unless `SCRAPER_ENABLED=1`, occupancy stats use the whole archive (to 2026-08-03)
 - **Gym hours:** Mon-Fri 6:00-24:00, Sat-Sun 8:00-20:00 (in `database.py GYM_HOURS`)
 - **Polish UI** — all user-facing errors and messages in Polish
 - **CSS vars** unified across all pages — canonical values in `base.html`

@@ -964,22 +964,23 @@ def save_hourly_occupancy(occupancy_count: int):
     }, merge=True)
 
 
-def fetch_recent_hourly_data(days: int = 30) -> List[Dict[str, Any]]:
+def fetch_recent_hourly_data(days: Optional[int] = None) -> List[Dict[str, Any]]:
     """
-    Fetch all hourly occupancy data for the last N days.
+    Fetch hourly occupancy data for the last N days, or the whole archive when days is None.
+    Collection stopped on 2026-08-03 (the club removed the live counter), so the statistics
+    use the whole archive by default.
     Returns a list of dicts, efficiently prefetched for use in other functions.
     """
     start_time = time.time()
     try:
         db = get_db()
-        tz = pytz.timezone('Europe/Warsaw')
-        now = datetime.now(tz)
-        start_date = (now - timedelta(days=days)).strftime('%Y-%m-%d')
-        
-        docs = db.collection('hourly_occupancy')\
-            .where('date', '>=', start_date)\
-            .stream()
-            
+        query = db.collection('hourly_occupancy')
+        if days is not None:
+            tz = pytz.timezone('Europe/Warsaw')
+            start_date = (datetime.now(tz) - timedelta(days=days)).strftime('%Y-%m-%d')
+            query = query.where('date', '>=', start_date)
+        docs = query.stream()
+
         data = [doc.to_dict() for doc in docs]
         
         duration = time.time() - start_time
@@ -1020,7 +1021,7 @@ def _preprocess_daily_hourly(cached_data: List[Dict[str, Any]]) -> Dict[str, Dic
     return result
 
 
-def get_hourly_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> Dict[int, float]:
+def get_hourly_averages(days: Optional[int] = None, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> Dict[int, float]:
     """
     Calculate average ENTRIES per hour of the day.
     Entries = difference between consecutive hourly readings.
@@ -1221,7 +1222,7 @@ def get_hourly_stats() -> dict:
     tz = pytz.timezone('Europe/Warsaw')
     now = datetime.now(tz)
 
-    cached_data = fetch_recent_hourly_data(30)
+    cached_data = fetch_recent_hourly_data()
     
     averages = get_hourly_averages(cached_data=cached_data)
     best_hours = get_best_hours(3, cached_data=cached_data)
@@ -1250,7 +1251,7 @@ def get_hourly_stats() -> dict:
 WEEKDAY_NAMES_SHORT = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd']
 
 
-def get_daily_averages(days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> Dict[str, float]:
+def get_daily_averages(days: Optional[int] = None, cached_data: Optional[List[Dict[str, Any]]] = None, _preprocessed: Optional[dict] = None) -> Dict[str, float]:
     """
     Calculate average occupancy for each day of the week.
     Uses data from the last N days.
@@ -1320,7 +1321,7 @@ def _get_day_hour_combos(top_n: int = 3, ascending: bool = True, cached_data: Op
         daily_data = _preprocessed
     else:
         if cached_data is None:
-            cached_data = fetch_recent_hourly_data(30)
+            cached_data = fetch_recent_hourly_data()
         daily_data = _preprocess_daily_hourly(cached_data)
 
     # Calculate entries per hour for each day (already filtered to complete days)
@@ -1421,7 +1422,7 @@ def get_today_average(cached_data: Optional[List[Dict[str, Any]]] = None) -> flo
     return averages.get(weekday_name, 0)
 
 
-def get_weekday_hour_average(weekday: int, hour: int, days: int = 30, cached_data: Optional[List[Dict[str, Any]]] = None) -> float:
+def get_weekday_hour_average(weekday: int, hour: int, days: Optional[int] = None, cached_data: Optional[List[Dict[str, Any]]] = None) -> float:
     """
     Get average occupancy for a specific weekday and hour.
     For example: average Friday at 17:00.
@@ -1475,6 +1476,19 @@ def get_weekday_hour_average(weekday: int, hour: int, days: int = 30, cached_dat
     return 0
 
 
+def get_archive_range(cached_data: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """First/last date of the occupancy archive and the number of complete days used in the stats."""
+    dates = sorted({d['date'] for d in cached_data if d.get('date')})
+    if not dates:
+        return None
+    return {
+        'from': dates[0],
+        'to': dates[-1],
+        'days': len(dates),
+        'complete_days': len(_preprocess_daily_hourly(cached_data)),
+    }
+
+
 def get_extended_occupancy_stats() -> Dict[str, Any]:
     """
     Get all extended occupancy statistics for the dashboard.
@@ -1488,7 +1502,7 @@ def get_extended_occupancy_stats() -> Dict[str, Any]:
     now = datetime.now(tz)
 
     # 1. Fetch data ONCE
-    cached_data = fetch_recent_hourly_data(30)
+    cached_data = fetch_recent_hourly_data()
 
     # 2. Preprocess ONCE — group by date, filter gym hours, skip incomplete days
     preprocessed = _preprocess_daily_hourly(cached_data)
@@ -1507,6 +1521,7 @@ def get_extended_occupancy_stats() -> Dict[str, Any]:
         'best_times': get_best_day_hour_combos(3, _preprocessed=preprocessed),
         'worst_times': get_worst_day_hour_combos(3, _preprocessed=preprocessed),
         'weekday_name_full': WEEKDAY_NAMES_PL[now.weekday()],
+        'archive': get_archive_range(cached_data),
     }
     _set_cache('extended_stats', result)
     return result
